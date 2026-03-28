@@ -6,8 +6,8 @@ local project  = { package = "PID", version = "dev" }
 local rockspec = { revision = 1 }
 local git = {
     user   = "SoulslikeEnjoyer",
-    repo   = project.package,
-    branch = project.version == "dev" and "master" or project.version -- TODO: what happens here?.. i dunno
+    repo   = project.package .. "-Lua",
+    branch = project.version == "dev" and "main" or project.version -- TODO: what happens here?.. i dunno
 }
 
 package = project.package
