@@ -1,22 +1,26 @@
 -- Path configuration for local modules ("Trajectory" and "Path" modules)
 package.path  = "example/module/?.lua;" .. package.path
 
--- Components --
-local dir = require("pl.dir")
+-- Components
+local dir    = require("pl.dir")
 local plotly = require("plotly")
 
--- Local components --
-local PID = require("PID.std")
+-- Local components
+local PID        = require("PID.std")
 local Trajectory = require("Trajectory")
-local Path = require("Path")
+local Path       = require("Path")
 
--- Trajectory function --
+-- Temporary components
+local utils   = require("PID.utils")
+local types   = require("pl.types")
+local inspect = require("inspect")
+
+-- Trajectory function
 local function spiral(t)
-    local coords = { t * math.cos(t), t * math.sin(t) }
+    local coords = { x = t * math.cos(t), y = t * math.sin(t) }
     return coords
 end
 
--- Entry point --
 local function main(...)
     -- Experiment configuration
     local start = {}
@@ -46,16 +50,26 @@ local function main(...)
         movement_time = movement_time + delta_time
     end
 
-    -- Plot experiment results: calculated trajectory and actual path traveled
-    local trace = { trajectory={ x={}, y={} }, path={ x={}, y={} } }
+    -- Prepare data for plotting (convert list of 2D-arrays into 2D-array of lists)
+    local trace = { trajectory={}, path={} }
     for _, position in ipairs(trajectory.record.positions) do
-        table.insert(trace.trajectory.x, position[1])
-        table.insert(trace.trajectory.y, position[2])
+        for coordinate, value in pairs(position) do
+            if trace.trajectory[coordinate] == nil then
+                trace.trajectory[coordinate] = {}
+            end
+            table.insert(trace.trajectory[coordinate], value)
+        end
     end
     for _, position in ipairs(path.record.positions) do
-        table.insert(trace.path.x, position[1])
-        table.insert(trace.path.y, position[2])
+        for coordinate, value in pairs(position) do
+            if trace.path[coordinate] == nil then
+                trace.path[coordinate] = {}
+            end
+            table.insert(trace.path[coordinate], value)
+        end
     end
+
+    -- Plot experiment results: calculated trajectory and actual path traveled
     local figure = plotly.figure()
     figure:plot({ title="Calculated trajectory and actual path traveled", xlabel="X Coordinate", ylabel="Y Coordinate" })
     figure:plot({ x=trace.trajectory.x, y=trace.trajectory.y, mode="l", name="Trajectory" })

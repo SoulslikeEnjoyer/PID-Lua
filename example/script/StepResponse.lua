@@ -1,14 +1,14 @@
 -- Path configuration for local modules ("Trajectory" and "Path" modules)
 package.path  = "example/module/?.lua;" .. package.path
 
--- Components --
-local dir = require("pl.dir")
+-- Components
+local dir    = require("pl.dir")
 local plotly = require("plotly")
 
--- Local components --
-local PID = require("PID.std")
+-- Local components
+local PID        = require("PID.std")
 local Trajectory = require("Trajectory")
-local Path = require("Path")
+local Path       = require("Path")
 
 -- Function to study controller's behaviour on - Heaviside step function
 local function Heaviside(t)

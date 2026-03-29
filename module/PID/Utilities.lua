@@ -1,18 +1,34 @@
 -- Cpmponents
 local types = require("pl.types")
 
+-- Temporary components
+local inspect = require("inspect")
+
 local utils = {}
 
-function utils.is_vector(value)
-    local is_indexable = types.is_indexable(value)
-    if is_indexable then
-        for index = 1, #value do
-            if not types.is_type(value[index], "number") then
+function utils.is_vector(object)
+    if types.is_iterable(object) then
+        for _, value in pairs(object) do
+            if not types.is_type(value, "number") then
                 return false
             end
         end
     else
         return false
+    end
+    return true
+end
+
+function utils.have_same_keys(t1, t2)
+    for k, _ in pairs(t1) do
+        if t2[k] == nil then
+            return false
+        end
+    end
+    for k, _ in pairs(t2) do
+        if t1[k] == nil then
+            return false
+        end
     end
     return true
 end

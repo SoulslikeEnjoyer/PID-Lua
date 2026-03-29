@@ -61,11 +61,12 @@ function Trajectory:calculate()
                 self.current.timestamp = next.timestamp
 
                 -- Calculate next position
-                next.position = self.rule(self.current.timestamp)
+                next.position = self.rule(next.timestamp)
                 assert(types.is_type(self.current.position, "number") and types.is_type(next.position, "number") or
-                    utils.is_vector(self.current.position) and utils.is_vector(next.position),
-                    "next position, calculated by calculation rule does not correspond dimensionwise to previous position in a trajectory")
-                self.current.position = next.position
+                    utils.is_vector(self.current.position) and utils.is_vector(next.position) and
+                    utils.have_same_keys(self.current.position, next.position),
+                    "Next position in a trajectory does not correspond mathematically to previous position")
+                self.current.position = tablex.deepcopy(next.position)
 
                 -- Add current timestamp to trajectory record
                 table.insert(self.record.timestamps, self.current.timestamp)
