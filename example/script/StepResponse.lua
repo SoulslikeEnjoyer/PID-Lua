@@ -20,7 +20,9 @@ end
 
 local function main(...)
     -- Experiment configuration
-    local start_position = Heaviside(0)
+    local start = {}
+    start.time = 0
+    start.position = Heaviside(start.time)
     local total_time = 10    -- 10 seconds
     local delta_time = 0.001 -- 1 millisecond
 
@@ -29,8 +31,8 @@ local function main(...)
 
     -- Auxiliary experiment structures
     local record_size = 1e6
-    local trajectory = Trajectory:new(Heaviside, record_size)
-    local path = Path:new(controller, start_position, record_size)
+    local trajectory = Trajectory(Heaviside, start.time, record_size)
+    local path = Path:new(controller, start.position, record_size)
 
     -- Conduct an experiment: follow the trajectory and record actual path traveled
     local movement_time = 0

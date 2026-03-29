@@ -19,7 +19,9 @@ end
 -- Entry point --
 local function main(...)
     -- Experiment configuration
-    local start_position = spiral(0)
+    local start = {}
+    start.time = 0
+    start.position = spiral(start.time)
     local total_time = 10    -- 10 seconds
     local delta_time = 0.001 -- 1 millisecond
 
@@ -28,8 +30,8 @@ local function main(...)
 
     -- Auxiliary experiment structures
     local record_size = 1e6
-    local trajectory = Trajectory:new(spiral, record_size)
-    local path = Path:new(controller, start_position, record_size)
+    local trajectory = Trajectory(spiral, start.time, record_size)
+    local path = Path:new(controller, start.position, record_size)
 
     -- Conduct an experiment: follow the trajectory and record actual path traveled
     local movement_time = 0

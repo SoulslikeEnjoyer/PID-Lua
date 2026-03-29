@@ -30,13 +30,14 @@ description = {
 }
 
 dependencies = {
-    "lua >= 5.1",
+    "lua >= 5.2",
     "penlight"
 }
 
 build = {
     type = "builtin",
     modules = {
+        ["PID.utils"] = "module/PID/Utilities.lua",
         ["PID.std"] = "module/PID/Standard.lua",
     }
 }
