@@ -23,8 +23,8 @@ local function main(...)
     local start = {}
     start.time = 0
     start.position = Heaviside(start.time)
-    local total_time = 10    -- 10 seconds
-    local delta_time = 0.001 -- 1 millisecond
+    local movement_time = 10    -- 10 seconds
+    local    delta_time = 0.001 -- 1 millisecond
 
     -- Object of the study - PID controller
     local controller = PID:new(1, 0, 0)
@@ -35,16 +35,14 @@ local function main(...)
     local path = Path:new(controller, start.position, record_size)
 
     -- Conduct an experiment: follow the trajectory and record actual path traveled
-    local movement_time = 0
-    while movement_time < total_time do
+    local total_time = 0
+    while total_time < movement_time do
         -- Calculate next position in a trajectory
-        local _, next_position = coroutine.resume(trajectory:calculate(), delta_time)
+        assert(coroutine.resume(trajectory:calculate(), delta_time))
         -- Move towards next position
-        coroutine.resume(path:move(), next_position, delta_time)
-        -- or "coroutine.resume(path:move(), trajectory.current.position, delta_time)"
-        -- since Trajectory and Path classes keep trace records
+        assert(coroutine.resume(path:move(), trajectory.current.position, delta_time))
 
-        movement_time = movement_time + delta_time
+        total_time = total_time + delta_time
     end
 
     -- Plot experiment results: calculated trajectory and actual path traveled
