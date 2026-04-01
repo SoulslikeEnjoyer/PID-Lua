@@ -1,88 +1,153 @@
--- PIDStandard.lua
-
 -- Components
+local class  = require("pl.class" )
+local tablex = require("pl.tablex")
+local types  = require("pl.types" )
 
-local PID = {}
-PID.__index = PID
+-- Local components
+local utils  = require("PID.utils")
 
-function PID:new(Kp, Ki, Kd)
-    local obj = {
-        -- Coeffitients
-        Kp = Kp or 0.,
-        Ki = Ki or 0.,
-        Kd = Kd or 0.,
+-- Class declaration
+local PID = class()
 
-        -- Auxiliary values
+-- Class initialization method
+function PID:_init(Kp, Ki, Kd)
+    -- Type safety checks
+    assert(types.is_type(Kp, "number"),
+        "Kp coeffitient parameter is not a number")
+    assert(types.is_type(Ki, "number"),
+        "Ki coeffitient parameter is not a number")
+    assert(types.is_type(Kd, "number"),
+        "Kd coeffitient parameter is not a number")
+
+    -- Initialization
+    self.Kp = Kp
+    self.Ki = Ki
+    self.Kd = Kd
+    self.storage = {
         integral = nil,
-        previous_error = nil
+        error    = nil
     }
-    setmetatable(obj, PID)
-    return obj
 end
 
 function PID:correct()
     return coroutine.create(
-        function(current, target, delta_time)
+        function(input, target, delta_time)
             while true do
-                local output
+                -- Type safety checks
+                assert(types.is_type(input, "number") and types.is_type(target, "number") or
+                    utils.is_vector(input) and utils.is_vector(target) and
+                    utils.have_same_keys(input, target),
+                    "Input value and target value do not correspond mathematically")
+                assert(types.is_type(delta_time, "number"),
+                    "delta_time parameter is not a number")
 
-                if type(target) == "table" then -- PID controller corrects vector value
-                    -- Vector error value
-                    local error = {}
-                    for i = 1, #target do
-                        error[i] = target[i] - current[i]
-                    end
+                -- Control output value
+                local output = nil
 
-                    -- Vector proportional gain
-                    local P = {}
-                    for i = 1, #error do
-                        P[i] = error[i]
-                    end
+                if types.is_type(input, "number") then -- PID controller regulates scalar value
+                    -- Scalar control output value
+                    output = 0
 
-                    -- Vector integral gain
-                    if not self.integral then
-                        self.integral = {}
-                    end
-                    for i = 1, #error do
-                        self.intagral[i] = (self.integral[i] or 0) + error[i] * delta_time
-                    end
-                    local I = {}
-                    for i = 1, #self.integral do
-                        I[i] = self.integral[i]
-                    end
+                    -- Error value
+                    local error = target - input
 
-                    -- Vector derivative gain
-                    if not self.previous_error then
-                        self.previous_error = {}
-                    end
-                    local D = {}
-                    for i = 1, #error do
-                        D[i] = (error[i] - (self.previous_error[i] or 0)) / delta_time
-                        self.previous_error[i] = error[i]
+                    -- Proportional gain
+                    if self.Kp ~= 0 then
+                        -- Gain
+                        local P = error
+
+                        -- Contribution
+                        output = output + self.Kp * P
                     end
 
-                    -- Vector control output
+                    -- Integral gain
+                    if self.Ki ~= 0 then
+                        -- Gain
+                        if self.storage.integral == nil then
+                            self.storage.integral = 0
+                        end
+                        self.storage.integral = (not utils.equal(error, 0)) and -- ternary operation
+                            self.storage.integral + error * delta_time or
+                            0
+                        local I = self.storage.integral
+
+                        -- Contribution
+                        output = output + self.Ki * I
+                    end
+
+                    -- Derivative gain
+                    if self.Kd ~= 0 then
+                        -- Gain
+                        local D = 0
+                        if self.storage.error ~= nil then
+                            D = (error - self.storage.error) / delta_time
+                        end
+                        self.storage.error = error
+
+                        -- Contribution
+                        output = output + self.Kd * D
+                    end
+                else -- PID controller regulates vector value
+                    -- Vector control output value
                     output = {}
-                    for i = 1, #target do
-                        output[i] = P[i] * self.Kp + I[i] * self.Ki + D[i] * self.Kd
+                    for key, _ in pairs(input) do
+                        output[key] = 0
                     end
-                else -- PID controller corrects scalar value
-                    -- Scalar error value
-                    local error = target - current
 
-                    -- Scalar proportional gain
-                    local P = error
+                    -- Error value
+                    local error = {}
+                    for key, _ in pairs(error) do
+                        error[key] = target[key] - input[key]
+                    end
 
-                    -- Scalar integral gain
-                    self.accumulator = (self.accumulator or 0) + error * delta_time
-                    local I = self.accumulator
+                    -- Proportional gain
+                    if self.Kp ~= 0 then
+                        -- Gain
+                        local P = tablex.deepcopy(error)
 
-                    -- Scalar derivative gain
-                    local D = (error - (self.previous_error or 0)) / delta_time
-                    self.previous_error = error
+                        -- Contribution
+                        for key, _ in pairs(output) do
+                            output[key] = output[key] + self.Kp * P[key]
+                        end
+                    end
 
-                    -- Scalar control output
-                    output = P * self.Kp + I * self.Ki + D * self.Kd
+                    -- Integral gain
+                    if self.Ki ~= 0 then
+                        -- Gain
+                        if self.storage.integral == nil then
+                            self.storage.integral = {}
+                        end
+                        for key, _ in pairs(input) do
+                            self.storage.integral[key] = (not utils.equal(error[key], 0)) and -- ternary operation
+                                (self.storage.integral[key] or 0) + error[key] * delta_time or
+                                0
+                        end
+                        local I = tablex.deepcopy(self.storage.integral)
+
+                        -- Contribution
+                        for key, _ in pairs(output) do
+                            output[key] = output[key] + self.Ki * I[key]
+                        end
+                    end
+
+                    -- Derivative gain
+                    if self.Kd ~= 0 then
+                        -- Gain
+                        local D = {}
+                        if self.storage.error ~= nil then
+                            for key, _ in pairs(error) do
+                                D[key] = (error[key] - self.storage.error[key]) / delta_time
+                            end
+                        end
+                        for key, _ in pairs(error) do
+                            self.storage.error[key] = error[key]
+                        end
+
+                        -- Contribution
+                        for key, _ in pairs(output) do
+                            output[key] = output[key] + self.Kd * D[key]
+                        end
+                    end
                 end
 
                 -- Yield the control output and pause until resumed

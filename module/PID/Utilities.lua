@@ -6,6 +6,20 @@ local inspect = require("inspect")
 
 local utils = {}
 
+function utils.equal(a, b, epsilon)
+    -- Type safety checks
+    assert(types.is_type(a, "number"),
+        "a parameter is not a number")
+    assert(types.is_type(b, "number"),
+        "b parameter is not a number")
+    assert(types.is_type(epsilon, "number"),
+        "epsilon parameter is not a number")
+
+    -- Number comparison
+    epsilon = epsilon or (2.0 ^ -52)
+    return a == b or math.abs(a - b) < epsilon
+end
+
 function utils.is_vector(object)
     if types.is_iterable(object) then
         for _, value in pairs(object) do
