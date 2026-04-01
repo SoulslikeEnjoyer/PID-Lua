@@ -22,10 +22,10 @@ function Trajectory:_init(calculation_rule, starting_time, record_size)
     -- Starting position (acquire and check)
     local starting_position = calculation_rule(starting_time or 0)
     assert(types.is_type(starting_position, "number") or utils.is_vector(starting_position),
-        "calculation_rule parameter returns nor a number nor a vector value")
+        "calculation_rule parameter returns neither a scalar nor a vector value")
 
     -- Initialization
-    self.rule = calculation_rule
+    self.rule = tablex.deepcopy(calculation_rule)
     self.current = {
         timestamp = starting_time or 0,
         position  = tablex.deepcopy(starting_position)
@@ -58,6 +58,7 @@ function Trajectory:calculate()
 
                 -- Calculate next timestamp
                 next.timestamp = self.current.timestamp + delta_time
+                -- Update current timestamp
                 self.current.timestamp = next.timestamp
 
                 -- Calculate next position
@@ -65,7 +66,8 @@ function Trajectory:calculate()
                 assert(types.is_type(self.current.position, "number") and types.is_type(next.position, "number") or
                     utils.is_vector(self.current.position) and utils.is_vector(next.position) and
                     utils.have_same_keys(self.current.position, next.position),
-                    "Next position in a trajectory does not correspond mathematically to previous position")
+                    "Next and previous positions in a trajectory do not correspond mathematically")
+                -- Update current position
                 self.current.position = tablex.deepcopy(next.position)
 
                 -- Add current timestamp to trajectory record
@@ -80,7 +82,7 @@ function Trajectory:calculate()
                     table.remove(self.record.positions, 1)
                 end
 
-                -- Yield the current poaition in a trajectory and pause until resumed
+                -- Yield the current position in a trajectory and pause until resumed
                 coroutine.yield(self.current.position)
             end
         end

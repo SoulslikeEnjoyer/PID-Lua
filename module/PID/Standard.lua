@@ -6,6 +6,9 @@ local types  = require("pl.types" )
 -- Local components
 local utils  = require("PID.utils")
 
+-- Temporary components
+local inspect = require("inspect")
+
 -- Class declaration
 local PID = class()
 
@@ -37,7 +40,7 @@ function PID:correct()
                 assert(types.is_type(input, "number") and types.is_type(target, "number") or
                     utils.is_vector(input) and utils.is_vector(target) and
                     utils.have_same_keys(input, target),
-                    "Input value and target value do not correspond mathematically")
+                    "Input and target values do not correspond mathematically")
                 assert(types.is_type(delta_time, "number"),
                     "delta_time parameter is not a number")
 
@@ -57,7 +60,7 @@ function PID:correct()
                         local P = error
 
                         -- Contribution
-                        output = output + self.Kp * P
+                        output = self.Kp * P
                     end
 
                     -- Integral gain
@@ -90,13 +93,10 @@ function PID:correct()
                 else -- PID controller regulates vector value
                     -- Vector control output value
                     output = {}
-                    for key, _ in pairs(input) do
-                        output[key] = 0
-                    end
 
                     -- Error value
                     local error = {}
-                    for key, _ in pairs(error) do
+                    for key, _ in pairs(target) do
                         error[key] = target[key] - input[key]
                     end
 
@@ -106,8 +106,8 @@ function PID:correct()
                         local P = tablex.deepcopy(error)
 
                         -- Contribution
-                        for key, _ in pairs(output) do
-                            output[key] = output[key] + self.Kp * P[key]
+                        for key, _ in pairs(P) do
+                            output[key] = self.Kp * P[key]
                         end
                     end
 
@@ -125,7 +125,7 @@ function PID:correct()
                         local I = tablex.deepcopy(self.storage.integral)
 
                         -- Contribution
-                        for key, _ in pairs(output) do
+                        for key, _ in pairs(I) do
                             output[key] = output[key] + self.Ki * I[key]
                         end
                     end
@@ -134,7 +134,10 @@ function PID:correct()
                     if self.Kd ~= 0 then
                         -- Gain
                         local D = {}
-                        if self.storage.error ~= nil then
+                        if self.storage.error == nil then
+                            self.storage.error = {}
+                        end
+                        if not types.is_empty(self.storage.error) then
                             for key, _ in pairs(error) do
                                 D[key] = (error[key] - self.storage.error[key]) / delta_time
                             end
@@ -144,7 +147,7 @@ function PID:correct()
                         end
 
                         -- Contribution
-                        for key, _ in pairs(output) do
+                        for key, _ in pairs(D) do
                             output[key] = output[key] + self.Kd * D[key]
                         end
                     end

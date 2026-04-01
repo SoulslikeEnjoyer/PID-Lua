@@ -12,10 +12,10 @@ function utils.equal(a, b, epsilon)
         "a parameter is not a number")
     assert(types.is_type(b, "number"),
         "b parameter is not a number")
-    assert(types.is_type(epsilon, "number"),
-        "epsilon parameter is not a number")
+    assert(types.is_type(epsilon, "nil") or types.is_type(epsilon, "number"),
+        "epsilon optional parameter is not a number")
 
-    -- Number comparison
+    -- Floating-point numbers comparison
     epsilon = epsilon or (2.0 ^ -52)
     return a == b or math.abs(a - b) < epsilon
 end

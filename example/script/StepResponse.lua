@@ -32,7 +32,7 @@ local function main(...)
     -- Auxiliary experiment structures
     local record_size = 1e6
     local trajectory = Trajectory(Heaviside, start.time, record_size)
-    local path = Path:new(controller, start.position, record_size)
+    local path = Path(controller, start, record_size)
 
     -- Conduct an experiment: follow the trajectory and record actual path traveled
     local total_time = 0
