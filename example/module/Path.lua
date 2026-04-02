@@ -28,12 +28,14 @@ function Path:_init(controller, start, record_size)
     self.controller = tablex.deepcopy(controller)
     self.current = {
         timestamp = start.time,
-        position  = tablex.deepcopy(start.position)
+        position = tablex.deepcopy(start.position),
+        speed = (not types.is_type(start.position, "number")) and {} or 0 -- ternary operation
     }
     self.record = {
         size = record_size or 0,
         timestamps = {},
-        positions = {}
+        positions = {},
+        speed_values = {}
     }
     if self.record.size > 0 then
         table.insert(self.record.timestamps, self.current.timestamp)
@@ -57,7 +59,8 @@ function Path:move()
                 -- Next record data
                 local next = {
                     timestamp = 0,
-                    position = (not types.is_type(self.current.position, "number")) and {} or 0 -- ternary operation
+                    position  = (not types.is_type(self.current.position, "number")) and {} or 0, -- ternary operation
+                    speed     = (not types.is_type(self.current.speed   , "number")) and {} or 0  -- ternary operation
                 }
 
                 -- Calculate next timestamp
@@ -65,19 +68,27 @@ function Path:move()
                 -- Update current timestamp
                 self.current.timestamp = next.timestamp
 
-                -- Calculate next position
-                local _, velocity = assert(coroutine.resume(self.controller:correct(), self.current.position, target, delta_time))
-                assert(types.is_type(self.current.position, "number") and types.is_type(velocity, "number") or
-                    utils.is_vector(self.current.position) and utils.is_vector(velocity) and
-                    utils.have_same_keys(self.current.position, velocity),
-                    "Current position and velocity do not correspond mathematically")
+                -- Calculate control value (throttle)
+                local _, control = assert(coroutine.resume(self.controller:correct(), self.current.position, target, delta_time))
+                assert(types.is_type(self.current.position, "number") and types.is_type(control, "number") or
+                    utils.is_vector(self.current.position) and utils.is_vector(control) and
+                    utils.have_same_keys(self.current.position, control),
+                    "Current position and control value do not correspond mathematically")
                 if types.is_type(self.current.position, "number") then -- monodimensional trajectory travel
-                    next.position = self.current.position + velocity * delta_time
+                    -- Calculate next speed value
+                    next.speed = self.current.speed + control * delta_time
+                    -- Calculate next position
+                    next.position = self.current.position + next.speed * delta_time
                 else -- multidimensional trajectory travel
                     for key, _ in pairs(self.current.position) do
-                        next.position[key] = self.current.position[key] + velocity[key] * delta_time
+                        -- Calculate next speed value
+                        next.speed[key] = (self.current.speed[key] or 0) + control[key] * delta_time
+                        -- Calculate next position
+                        next.position[key] = self.current.position[key] + next.speed[key] * delta_time
                     end
                 end
+                -- Update current speed value
+                self.current.speed = tablex.deepcopy(next.speed)
                 -- Update current position
                 self.current.position = tablex.deepcopy(next.position)
 
@@ -93,7 +104,13 @@ function Path:move()
                     table.remove(self.record.positions, 1)
                 end
 
-                -- Yield the current position in a path and pause until resumed
+                -- Add current speed value to path record
+                table.insert(self.record.speed_values, tablex.deepcopy(self.current.speed))
+                while #self.record.speed_values > self.record.size do
+                    table.remove(self.record.speed_values, 1)
+                end
+
+                -- Yield the current position and pause until resumed
                 coroutine.yield(self.current.position)
             end
         end

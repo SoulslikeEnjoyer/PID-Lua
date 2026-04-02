@@ -45,12 +45,9 @@ function PID:correct()
                     "delta_time parameter is not a number")
 
                 -- Control output value
-                local output = nil
+                local output = (not types.is_type(input, "number")) and {} or 0 -- ternary operation
 
                 if types.is_type(input, "number") then -- PID controller regulates scalar value
-                    -- Scalar control output value
-                    output = 0
-
                     -- Error value
                     local error = target - input
 
@@ -66,7 +63,7 @@ function PID:correct()
                     -- Integral gain
                     if self.Ki ~= 0 then
                         -- Gain
-                        if self.storage.integral == nil then
+                        if types.is_type(self.storage.integral, "nil") then
                             self.storage.integral = 0
                         end
                         self.storage.integral = (not utils.equal(error, 0)) and -- ternary operation
@@ -82,7 +79,7 @@ function PID:correct()
                     if self.Kd ~= 0 then
                         -- Gain
                         local D = 0
-                        if self.storage.error ~= nil then
+                        if not types.is_type(self.storage.error, "nil") then
                             D = (error - self.storage.error) / delta_time
                         end
                         self.storage.error = error
@@ -91,9 +88,6 @@ function PID:correct()
                         output = output + self.Kd * D
                     end
                 else -- PID controller regulates vector value
-                    -- Vector control output value
-                    output = {}
-
                     -- Error value
                     local error = {}
                     for key, _ in pairs(target) do
@@ -107,14 +101,14 @@ function PID:correct()
 
                         -- Contribution
                         for key, _ in pairs(P) do
-                            output[key] = self.Kp * P[key]
+                            output[key] = (output[key] or 0) + self.Kp * P[key]
                         end
                     end
 
                     -- Integral gain
                     if self.Ki ~= 0 then
                         -- Gain
-                        if self.storage.integral == nil then
+                        if types.is_type(self.storage.integral, "nil") then
                             self.storage.integral = {}
                         end
                         for key, _ in pairs(input) do
@@ -126,7 +120,7 @@ function PID:correct()
 
                         -- Contribution
                         for key, _ in pairs(I) do
-                            output[key] = output[key] + self.Ki * I[key]
+                            output[key] = (output[key] or 0) + self.Ki * I[key]
                         end
                     end
 
@@ -134,13 +128,12 @@ function PID:correct()
                     if self.Kd ~= 0 then
                         -- Gain
                         local D = {}
-                        if self.storage.error == nil then
-                            self.storage.error = {}
-                        end
-                        if not types.is_empty(self.storage.error) then
+                        if not types.is_type(self.storage.error, "nil") then
                             for key, _ in pairs(error) do
-                                D[key] = (error[key] - self.storage.error[key]) / delta_time
+                                D[key] = (error[key] - (self.storage.error[key] or 0)) / delta_time
                             end
+                        else
+                            self.storage.error = {}
                         end
                         for key, _ in pairs(error) do
                             self.storage.error[key] = error[key]
@@ -148,7 +141,7 @@ function PID:correct()
 
                         -- Contribution
                         for key, _ in pairs(D) do
-                            output[key] = output[key] + self.Kd * D[key]
+                            output[key] = (output[key] or 0) + self.Kd * D[key]
                         end
                     end
                 end

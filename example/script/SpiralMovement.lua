@@ -30,7 +30,7 @@ local function main(...)
     local    delta_time = 0.001 -- 1 millisecond
 
     -- Object of the study - PID controller
-    local controller = PID(2000.75, 0, 0)
+    local controller = PID(0, 0.25, 7.5)
 
     -- Auxiliary experiment structures
     local record_size = 1e6
