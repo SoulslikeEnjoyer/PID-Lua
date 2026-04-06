@@ -51,18 +51,18 @@ function PID:correct()
                     -- Error value
                     local error = target - input
 
-                    -- Proportional gain
+                    -- Proportional term
                     if self.Kp ~= 0 then
-                        -- Gain
+                        -- Term
                         local P = error
 
                         -- Contribution
                         output = self.Kp * P
                     end
 
-                    -- Integral gain
+                    -- Integral term
                     if self.Ki ~= 0 then
-                        -- Gain
+                        -- Term
                         if types.is_type(self.storage.integral, "nil") then
                             self.storage.integral = 0
                         end
@@ -75,9 +75,9 @@ function PID:correct()
                         output = output + self.Ki * I
                     end
 
-                    -- Derivative gain
+                    -- Derivative term
                     if self.Kd ~= 0 then
-                        -- Gain
+                        -- Term
                         local D = 0
                         if not types.is_type(self.storage.error, "nil") then
                             D = (error - self.storage.error) / delta_time
@@ -94,9 +94,9 @@ function PID:correct()
                         error[key] = target[key] - input[key]
                     end
 
-                    -- Proportional gain
+                    -- Proportional term
                     if self.Kp ~= 0 then
-                        -- Gain
+                        -- Term
                         local P = tablex.deepcopy(error)
 
                         -- Contribution
@@ -105,9 +105,9 @@ function PID:correct()
                         end
                     end
 
-                    -- Integral gain
+                    -- Integral term
                     if self.Ki ~= 0 then
-                        -- Gain
+                        -- Term
                         if types.is_type(self.storage.integral, "nil") then
                             self.storage.integral = {}
                         end
@@ -124,9 +124,9 @@ function PID:correct()
                         end
                     end
 
-                    -- Derivative gain
+                    -- Derivative term
                     if self.Kd ~= 0 then
-                        -- Gain
+                        -- Term
                         local D = {}
                         if not types.is_type(self.storage.error, "nil") then
                             for key, _ in pairs(error) do

@@ -12,7 +12,7 @@ local Path       = require("Path")
 
 -- Function to study controller's behaviour on - Heaviside step function
 local function Heaviside(t)
-    if t > 0 then
+    if t >= 0 then
         return 1
     end
     return 0
@@ -22,7 +22,7 @@ local function main(...)
     -- Experiment configuration
     local start = {}
     start.time = 0
-    start.position = Heaviside(start.time)
+    start.position = 0
     local movement_time = 10    -- 10 seconds
     local    delta_time = 0.001 -- 1 millisecond
 

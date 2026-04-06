@@ -34,8 +34,7 @@ function Path:_init(controller, start, record_size)
     self.record = {
         size = record_size or 0,
         timestamps = {},
-        positions = {},
-        speed_values = {}
+        positions = {}
     }
     if self.record.size > 0 then
         table.insert(self.record.timestamps, self.current.timestamp)
@@ -65,10 +64,7 @@ function Path:move()
 
                 -- Calculate next timestamp
                 next.timestamp = self.current.timestamp + delta_time
-                -- Update current timestamp
-                self.current.timestamp = next.timestamp
-
-                -- Calculate control value (throttle)
+                -- Calculate control value (acceleration)
                 local _, control = assert(coroutine.resume(self.controller:correct(), self.current.position, target, delta_time))
                 assert(types.is_type(self.current.position, "number") and types.is_type(control, "number") or
                     utils.is_vector(self.current.position) and utils.is_vector(control) and
@@ -87,10 +83,9 @@ function Path:move()
                         next.position[key] = self.current.position[key] + next.speed[key] * delta_time
                     end
                 end
-                -- Update current speed value
-                self.current.speed = tablex.deepcopy(next.speed)
-                -- Update current position
-                self.current.position = tablex.deepcopy(next.position)
+
+                -- Update current state of the system
+                self.current = tablex.deepcopy(next)
 
                 -- Add current timestamp to path record
                 table.insert(self.record.timestamps, self.current.timestamp)
@@ -102,12 +97,6 @@ function Path:move()
                 table.insert(self.record.positions, tablex.deepcopy(self.current.position))
                 while #self.record.positions > self.record.size do
                     table.remove(self.record.positions, 1)
-                end
-
-                -- Add current speed value to path record
-                table.insert(self.record.speed_values, tablex.deepcopy(self.current.speed))
-                while #self.record.speed_values > self.record.size do
-                    table.remove(self.record.speed_values, 1)
                 end
 
                 -- Yield the current position and pause until resumed
