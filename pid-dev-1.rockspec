@@ -1,4 +1,4 @@
--- TODO: move configs into JSON file and generate rockspec on the fly
+-- TODO: move configs into JSON file and generate rockspec on the fly via GitHub actions
 
 rockspec_format = "3.0"
 
@@ -7,7 +7,7 @@ local rockspec = { revision = 1 }
 local git = {
     user   = "SoulslikeEnjoyer",
     repo   = project.package .. "-Lua",
-    branch = project.version == "dev" and "main" or project.version -- TODO: what happens here?.. i dunno
+    branch = project.version == "dev" and "main" or project.version -- ternary construction
 }
 
 package = project.package
@@ -19,10 +19,15 @@ source = {
 }
 
 description = {
-    summary = "PID controller implemented in Lua",
+    summary = "PID-Controller implemented in Lua",
     detailed = [[
-        Two versions of PID controller implemented. Standard and modified.
-        To use standard or modified version require "PID.std" or "PID.mod" modules respectively.
+        PID-Controller in Lua, supporting such features as:
+        - On fly modification of the controller terms' gains (Kp, Ki, Kd);
+        - Weighted Proportional term calculation (on Error and on Measurement approaches mixed);
+        - "Derivative Kick" prevention mechanism (Derivative on Measurement calculation approach);
+        - etc.
+        For usage, please, see examples ("StepResponse.lua" and "SpiralMovement.lua" scripts),
+        which implement movement of an inertial body along precalculated trajectory, using several differently tuned PID-Controllers.
     ]],
     license = "GPL-3",
     homepage = "https://github.com/" .. git.user .. '/' .. git.repo,
@@ -37,7 +42,6 @@ dependencies = {
 build = {
     type = "builtin",
     modules = {
-        ["PID.utils"] = "module/PID/Utilities.lua",
-        ["PID.std"] = "module/PID/Standard.lua",
+        ["PID"] = "module/PID.lua",
     }
 }

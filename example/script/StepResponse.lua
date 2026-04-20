@@ -6,7 +6,7 @@ local dir    = require("pl.dir")
 local plotly = require("plotly")
 
 -- Local components
-local PID        = require("PID.std")
+local PID        = require("PID")
 local Trajectory = require("Trajectory")
 local Path       = require("Path")
 
@@ -20,27 +20,34 @@ end
 
 local function main(...)
     -- Experiment configuration
-    local start = {}
-    start.time = 0
-    start.position = 0
+    local starting = {
+        timestamp = 0,
+        position  = 0,
+        velocity  = 0
+    }
     local movement_time = 10    -- 10 seconds
     local    delta_time = 0.001 -- 1 millisecond
 
     -- Object of the study - PID controller
-    local controller = PID(2.5, 0, 1)
+    -- local controller = PID(2.5, 0, 2.75) -- ideal on error
+    -- local controller = PID(7.5, 4.5, 1.25, 0.25)
+    -- local controller = PID(7.25, 2.5, 1.25, 0.5)
+    local controller = PID(4.75, 2.5, 2.75, 1) -- ideal on measure
 
     -- Auxiliary experiment structures
     local record_size = 1e6
-    local trajectory = Trajectory(Heaviside, start.time, record_size)
-    local path = Path(controller, start, record_size)
+    local trajectory = Trajectory(Heaviside, starting.timestamp, record_size)
+    local path = Path(controller, starting, record_size)
 
     -- Conduct an experiment: follow the trajectory and record actual path traveled
     local total_time = 0
     while total_time < movement_time do
         -- Calculate next position in a trajectory
-        assert(coroutine.resume(trajectory:calculate(), delta_time))
+        local target = trajectory:calculate(delta_time)
         -- Move towards next position
-        assert(coroutine.resume(path:move(), trajectory.current.position, delta_time))
+        path:move(target, delta_time)
+        -- or path:move(trajectory.current.position, delta_time)
+        -- since trajectory and path classes keep trace records
 
         total_time = total_time + delta_time
     end

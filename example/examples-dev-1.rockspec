@@ -20,12 +20,14 @@ source = {
 }
 
 description = {
-    summary = "PID controller usage examples",
+    summary = "PID-Controller usage examples",
     detailed = [[
-        Examples including two versions of PID controllers implemented. Standard and modified.
-        Step response example and spiral movement example.
-        To run example scripts, run following commands, from the root of the project:
+        To run example scripts, run following commands, from the root of the project tree:
         "lua -l deps example/script/StepResonse.lua" or "lua -l deps example/script/SpiralMovement.lua"
+        You will need "plotly" module installed as a dependency and an internet connection to render the plots:
+        Run "luarocks install --only-deps" from the root of the project tree with current rockspec as an argument or
+        "luarocks install --server=https://luarocks.org/dev plotly" to install "plotly" module manually.
+        (See: https://luarocks.org/modules/kenloen/plotly)
     ]],
     license = "GPL-3",
 }

@@ -1,39 +1,51 @@
 -- Components
 local class  = require("pl.class" )
 local tablex = require("pl.tablex")
-local types  = require("pl.types" )
 
--- Local components
-local utils  = require("PID.utils")
+-- Temporary components
+local inspect = require("inspect")
 
--- Class declaration
+-- Module class declaration
+--- @generic T: (number | vector<number>)
+--- @class Trajectory<T> # Trajectory class
+--- public:
+--- @field public rule (fun(time: number): T) # Calculation rule of the trajectory
+--- @field public current {
+---     timestamp: number,
+---     position: T,
+--- } # Current timestamp and position in a trajectory
+--- @field public record {
+---     size: integer,
+---     timestamps: number[],
+---     positions: T[],
+--- } # Record of recent timestamps and positions
+--- 
+--- @field public _init function # Constructor
+--- | fun(self: Trajectory<T>, calculation_rule: (fun(time: number): T), starting_timestamp: number, record_size?: integer)
+--- 
+--- @field public clear function # Clear record and set position corresponding to the relevant timestamp (if passed)
+--- | fun(self: Trajectory<T>, current_timestamp?: number)
+--- 
+--- @field public calculate function # Calculate next position in a trajectory
+--- | fun(self: Trajectory<T>, delta_time: number): T
+--- 
+--- private:
+--- @field private _impl {
+---     calculate: (fun(self: Trajectory<T>): thread),
+--- }
 local Trajectory = class()
+Trajectory._impl = {}
 
--- Class initialization method
-function Trajectory:_init(calculation_rule, starting_time, record_size)
-    -- Type safety checks
-    assert(types.is_callable(calculation_rule),
-        "calculation_rule parameter can not be called")
-    assert(types.is_type(record_size, "nil") or types.is_type(starting_time, "number"),
-        "starting_timestamp optional parameter is not a number")
-    assert(types.is_type(record_size, "nil") or types.is_type(record_size, "number") and types.is_integer(record_size),
-        "record_size optional parameter is not an integer number")
-
-    -- Starting position (acquire and check)
-    local starting_position = calculation_rule(starting_time or 0)
-    assert(types.is_type(starting_position, "number") or utils.is_vector(starting_position),
-        "calculation_rule parameter returns neither a scalar nor a vector value")
-
-    -- Initialization
+function Trajectory:_init(calculation_rule, starting_timestamp, record_size)
     self.rule = tablex.deepcopy(calculation_rule)
     self.current = {
-        timestamp = starting_time or 0,
-        position  = tablex.deepcopy(starting_position)
+        timestamp = starting_timestamp,
+        position  = tablex.deepcopy(self.rule(starting_timestamp))
     }
     self.record = {
         size = record_size or 0,
         timestamps = {},
-        positions = {}
+        positions  = {}
     }
     if self.record.size > 0 then
         table.insert(self.record.timestamps, self.current.timestamp)
@@ -41,34 +53,45 @@ function Trajectory:_init(calculation_rule, starting_time, record_size)
     end
 end
 
--- Trajectory calculation method
-function Trajectory:calculate()
+function Trajectory:clear(current_timestamp)
+    -- Clearing record data
+    self.record.timestamps = {}
+    self.record.positions  = {}
+
+    -- Updating current timestamp and position in the trajectory
+    if current_timestamp ~= nil then
+        self.current = {
+            timestamp = current_timestamp,
+            position  = tablex.deepcopy(self.rule(current_timestamp))
+        }
+    end
+end
+
+--- Tragectory calculation method implementation
+--- @generic T: (number | vector<number>)
+--- @param self Trajectory<T> # Trajectory itself
+--- @return thread # Trajectory calculation coroutine
+local calculate_impl = function(self)
     return coroutine.create(
+        --- Hidden Trajectory calculation logic implementation
+        --- @generic T: (number | vector<number>)
+        --- @param delta_time number # Time passed since last trajectory calculation
         function(delta_time)
             while true do
-                -- Type safety checks
-                assert(types.is_type(delta_time, "number"),
-                    "delta_time parameter is not a number")
-
-                -- Next record data
+                -- Next trajectory data
                 local next = {
                     timestamp = 0,
-                    position = nil
+                    position  = nil
                 }
 
                 -- Calculate next timestamp
                 next.timestamp = self.current.timestamp + delta_time
-                -- Update current timestamp
-                self.current.timestamp = next.timestamp
 
-                -- Calculate next position
+                -- Calculate next position in a trajectory
                 next.position = self.rule(next.timestamp)
-                assert(types.is_type(self.current.position, "number") and types.is_type(next.position, "number") or
-                    utils.is_vector(self.current.position) and utils.is_vector(next.position) and
-                    utils.have_same_keys(self.current.position, next.position),
-                    "Next and previous positions in a trajectory do not correspond mathematically")
-                -- Update current position
-                self.current.position = tablex.deepcopy(next.position)
+
+                -- Update current timestamp and position
+                self.current = tablex.deepcopy(next)
 
                 -- Add current timestamp to trajectory record
                 table.insert(self.record.timestamps, self.current.timestamp)
@@ -82,11 +105,16 @@ function Trajectory:calculate()
                     table.remove(self.record.positions, 1)
                 end
 
-                -- Yield the current position in a trajectory and pause until resumed
+                -- Yield calculated position and pause until resumed
                 coroutine.yield(self.current.position)
             end
         end
     )
+end Trajectory._impl.calculate = calculate_impl
+
+function Trajectory:calculate(delta_time)
+    local _, position = assert(coroutine.resume(self._impl.calculate(self), delta_time))
+    return position
 end
 
 return Trajectory
