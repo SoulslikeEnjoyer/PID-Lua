@@ -5,116 +5,155 @@ local tablex = require("pl.tablex")
 -- Temporary components
 local inspect = require("inspect")
 
+-- Auxiliary type definitions
+--- @class Vector<T>: { [(integer | string)]: T } # Vector value type
+
 -- Module class declaration
---- @generic T: (number | vector<number>)
+--- @generic T: (number | Vector<number>)
+--- @class State<T>: { timestamp: number, position: T }
 --- @class Trajectory<T> # Trajectory class
 --- public:
---- @field public rule (fun(time: number): T) # Calculation rule of the trajectory
---- @field public current {
----     timestamp: number,
----     position: T,
---- } # Current timestamp and position in a trajectory
---- @field public record {
----     size: integer,
----     timestamps: number[],
----     positions: T[],
---- } # Record of recent timestamps and positions
---- 
---- @field public _init function # Constructor
---- | fun(self: Trajectory<T>, calculation_rule: (fun(time: number): T), starting_timestamp: number, record_size?: integer)
---- 
+--- @field public calculationRule (fun(timestamp: number): T) # Rule to calculate position, corresponding to the specific timestamp
+---
+--- @field public _init function # Construct trajectory object
+--- | fun(self: Trajectory<T>, calculationRule: (fun(timestamp: number): T), startingTimestamp: number, recordCapacity?: integer)
+--- @field public current function | # Get current calculated state of the system
+--- | fun(self: Trajectory<T>): State<T>
+--- @field public record function | # Access trace record data
+--- | fun(self: Trajectory<T>): State<T>[]
 --- @field public clear function # Clear record and set position corresponding to the relevant timestamp (if passed)
---- | fun(self: Trajectory<T>, current_timestamp?: number)
---- 
---- @field public calculate function # Calculate next position in a trajectory
---- | fun(self: Trajectory<T>, delta_time: number): T
+--- | fun(self: Trajectory<T>, currentTimestamp?: number, recordCapacity?: integer)
+--- @field public calculate function # Calculate next state of the system
+--- | fun(self: Trajectory<T>, deltaTime: number): State<T>
 --- 
 --- private:
---- @field private _impl {
----     calculate: (fun(self: Trajectory<T>): thread),
---- }
+--- @field private currentTimestamp_ number # Current timestamp in a trajectory
+--- @field private traceRecord_ {
+---     capacity: integer,
+---     entries: number[],
+--- } # Record of recent trajectory calculations (timestamp values only, since position depends on timestamp)
+--- @field private cache_ {
+---     [(fun(timestamp: number): T)]: {
+---         [number]: T,
+---     },
+--- } # Cache storage for calculated positions, corresponding to specific calculation rule and exact timestamp
+---
+--- @field private cache_entry_ function | # Get position in a trajectory corresponding to the specific timestamp (precalculate if necessary)
+--- | fun(self: Trajectory<T>, calculationRule: (fun(timestamp: number): T), timestamp: number): T
+--- @field private record_entry_ function | # Form state object corresponding to the specific trace record entry
+--- | fun(self: Trajectory<T>, entryIndex: integer): State<T>?
 local Trajectory = class()
-Trajectory._impl = {}
 
-function Trajectory:_init(calculation_rule, starting_timestamp, record_size)
-    self.rule = tablex.deepcopy(calculation_rule)
-    self.current = {
-        timestamp = starting_timestamp,
-        position  = tablex.deepcopy(self.rule(starting_timestamp))
+function Trajectory:_init(calculationRule, startingTimestamp, recordCapacity)
+    self.calculationRule = tablex.deepcopy(calculationRule)
+
+    self.traceRecord_ = {
+        capacity = recordCapacity,
+        entries  = {}
     }
-    self.record = {
-        size = record_size or 0,
-        timestamps = {},
-        positions  = {}
+    self.cache_ = {
+        [self.calculationRule] = {}
     }
-    if self.record.size > 0 then
-        table.insert(self.record.timestamps, self.current.timestamp)
-        table.insert(self.record.positions, tablex.deepcopy(self.current.position))
+
+    self.currentTimestamp_ = startingTimestamp
+    self.cache_[self.calculationRule][self.currentTimestamp_] = self.calculationRule(self.currentTimestamp_)
+
+    if self.traceRecord_.capacity > 0 then
+        table.insert(self.traceRecord_.entries, self.currentTimestamp_)
     end
 end
 
-function Trajectory:clear(current_timestamp)
-    -- Clearing record data
-    self.record.timestamps = {}
-    self.record.positions  = {}
+function Trajectory:cache_entry_(calculationRule, timestamp)
+    if self.cache_[calculationRule] == nil then
+        self.cache_[calculationRule] = {}
+    end
+    if self.cache_[calculationRule][timestamp] == nil then
+        self.cache_[calculationRule][timestamp] = self.calculationRule(timestamp)
+    end
 
-    -- Updating current timestamp and position in the trajectory
-    if current_timestamp ~= nil then
-        self.current = {
-            timestamp = current_timestamp,
-            position  = tablex.deepcopy(self.rule(current_timestamp))
-        }
+    return self.cache_[calculationRule][timestamp]
+end
+
+function Trajectory:current()
+    --- @generic T: (number | Vector<number>)
+    --- @type State<T> # Current state of the system
+    local currentState = {
+        timestamp = self.currentTimestamp_,
+        position  = tablex.deepcopy(self:cache_entry_(self.calculationRule, self.currentTimestamp_))
+    }
+
+    return currentState
+end
+
+function Trajectory:record_entry_(entryIndex)
+    if #self.traceRecord_.entries == 0 then
+        return nil
+    end
+
+    -- Bring entry index to acceptable array boundaries 
+    entryIndex = (entryIndex + (#self.traceRecord_.entries - 1)) % #self.traceRecord_.entries + 1
+
+    --- @generic T: (number | Vector<number>)
+    --- @type State<T> # Entry state of the system
+    local entryState = {
+        timestamp = self.traceRecord_.entries[entryIndex],
+        position  = tablex.deepcopy(self:cache_entry_(self.calculationRule, self.traceRecord_.entries[entryIndex]))
+    }
+
+    return entryState
+end
+
+function Trajectory:record()
+    --- @generic T: (number | Vector<number>)
+    --- @type State<T>[] # Array of recent states of the system
+    local traceRecord = {}
+
+    for entryIndex = 1, #self.traceRecord_.entries do
+        table.insert(traceRecord, self:record_entry_(entryIndex))
+    end
+
+    return traceRecord
+end
+
+function Trajectory:clear(currentTimestamp, recordCapacity)
+    -- Clear trace record data and update trace record capacity if passed
+    self.traceRecord_.entries = {}
+    if recordCapacity ~= nil then
+        self.traceRecord_.capacity = recordCapacity
+    end
+
+    -- Clear cache data
+    self.cache_ = {
+        [self.calculationRule] = {}
+    }
+
+    -- Update current timestamp if passed
+    if currentTimestamp ~= nil then
+        self.currentTimestamp_ = currentTimestamp
+    end
+
+    if self.traceRecord_.capacity > 0 then
+        table.insert(self.traceRecord_.entries, self.currentTimestamp_)
     end
 end
 
---- Tragectory calculation method implementation
---- @generic T: (number | vector<number>)
---- @param self Trajectory<T> # Trajectory itself
---- @return thread # Trajectory calculation coroutine
-local calculate_impl = function(self)
-    return coroutine.create(
-        --- Hidden Trajectory calculation logic implementation
-        --- @generic T: (number | vector<number>)
-        --- @param delta_time number # Time passed since last trajectory calculation
-        function(delta_time)
-            while true do
-                -- Next trajectory data
-                local next = {
-                    timestamp = 0,
-                    position  = nil
-                }
+function Trajectory:calculate(deltaTime)
+    -- Update current timestamp and add value to the trace record
+    self.currentTimestamp_ = self.currentTimestamp_ + deltaTime
+    table.insert(self.traceRecord_.entries, self.currentTimestamp_)
+    while #self.traceRecord_.entries > self.traceRecord_.capacity do
+        table.remove(self.traceRecord_.entries, 1)
+    end
 
-                -- Calculate next timestamp
-                next.timestamp = self.current.timestamp + delta_time
+    --- @generic T: (number | Vector<number>)
+    --- @type State<T> # Current state of the system
+    local currentState = {
+        timestamp = self.currentTimestamp_,
+        position  = tablex.deepcopy(self:cache_entry_(self.calculationRule, self.currentTimestamp_))
+    }
 
-                -- Calculate next position in a trajectory
-                next.position = self.rule(next.timestamp)
-
-                -- Update current timestamp and position
-                self.current = tablex.deepcopy(next)
-
-                -- Add current timestamp to trajectory record
-                table.insert(self.record.timestamps, self.current.timestamp)
-                while #self.record.timestamps > self.record.size do
-                    table.remove(self.record.timestamps, 1)
-                end
-
-                -- Add current position to trajectory record
-                table.insert(self.record.positions, tablex.deepcopy(self.current.position))
-                while #self.record.positions > self.record.size do
-                    table.remove(self.record.positions, 1)
-                end
-
-                -- Yield calculated position and pause until resumed
-                coroutine.yield(self.current.position)
-            end
-        end
-    )
-end Trajectory._impl.calculate = calculate_impl
-
-function Trajectory:calculate(delta_time)
-    local _, position = assert(coroutine.resume(self._impl.calculate(self), delta_time))
-    return position
+    -- Return calculated state
+    return currentState
 end
 
 return Trajectory

@@ -4,13 +4,20 @@
 - [x] Rename PID.std to just PID and forget about PID.mod
 - [x] Equality function to PID.lua module
 - [x] Rewrite Trajectory
-- [ ] Think about whether passing a current table to Trajectory methods is a good idea (since position effectively depends on timestamp):
-  - [ ] I thought of _cache storage with the following layout { [timestamp]: { [rule]: position } } and position in current and record are just accessor function
-- [ ] Rewrite Path:
+- [x] Think about whether passing a current table to Trajectory methods is a good idea (since position effectively depends on timestamp):
+  - [x] I thought of cache_ storage with the following layout { [timestamp]: { [rule]: position } } and position in current and record are just accessor function
+  - [x] Rewrite. :
+    - [x] Open calculationRule to public
+    - [x] Add cache_entry_, because now I'm actively violating DRY principle
+  - [x] Rewrite StepResonse to work with upgraded Trajectory interface
+- [ ] Think about cache_ in a Path class (velocity depends on current and previous states of the system)
+- [x] Rewrite Path:
   - [x] Class documentation
-  - [ ] Finish
+  - [x] Finish
 - [ ] So, apparently, I don't even need coroutines (peepoSad):
-  - [ ] Try to hide accumulators inside coroutine of a PID-Controller
+  - [x] Remove coroutine logic from Trajectory class, since it is absolutely not needed
+  - [x] ~~Try to hide accumulators inside coroutine of a PID-Controller~~ (nah,.. sadly it's a little bit more complicated, than I thought)
+  - [ ] Remove all the coroutine logic
 - [ ] Change Trajectory and Path records to store "{...}[]":
   - [ ] Trajectory
   - [ ] Path
