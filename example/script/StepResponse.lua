@@ -25,7 +25,9 @@ local function Heaviside(t)
     return 0
 end
 
-local function main(...)
+--- Experiment conducting function
+--- @param controller PID<number>
+local function run(controller)
     -- Experiment configuration
     --- @generic T: (number | Vector<number>)
     --- @class State<T>: {
@@ -37,18 +39,11 @@ local function main(...)
         timestamp = 0,
         position = 0
     }
-    local movementTime = 60.000 -- 60 seconds
+    local movementTime = 10.000 -- 10 seconds
     local    deltaTime =  0.001 -- 1 millisecond
     -- local    deltaTime =  0.500 -- half a second (instability)
 
-    -- Object of the study - PID controller
-    --- @type PID<number>
-    -- local controller = PID(2.5, 0, 2.75) -- ideal on error
-    -- local controller = PID(4.75, 2.5, 2.75, 1) -- ideal on measure
-    -- local controller = PID(7.25, 2.5, 1.25, 0.5) -- bouncy
-    local controller = PID(16.25, 8.25, 1.5, 0.95) -- step-like
-
-    -- Auxiliary experiment structures
+    -- Secondary experiment structures
     --- @type integer
     local recordCapacity = 1e6
     --- @type Trajectory<number>
@@ -97,18 +92,40 @@ local function main(...)
     end
 
     -- Plot experiment results: calculated trajectory and actual path traveled
+    --- @type string # Title of the plot, describing PID-Controller configuration
+    local plotTitle = "PID(" ..
+            "Kp="   .. controller.term.proportional.gain .. ", " ..
+            "Ki="   .. controller.term.integral.gain     .. ", " ..
+            "Kd="   .. controller.term.derivative.gain   .. ", " ..
+            "PonM=" .. controller.term.proportional.on.measurement.weight() * 100 .. "%" ..
+        ")"
     local figure = plotly.figure()
-    figure:plot({ title="Calculated trajectory and actual path traveled", xlabel="Time", ylabel="Coordinate" })
+    figure:plot({ title=plotTitle, xlabel="Time", ylabel="Coordinate" })
     figure:plot({ x=trajectoryPlotData.timestamps, y=trajectoryPlotData.positions, mode="l", name="Trajectory" })
     figure:plot({ x=pathPlotData.timestamps, y=pathPlotData.positions    , mode="l", name="Path" })
     figure:plot({ x=pathPlotData.timestamps, y=pathPlotData.velocities   , mode="l", name="Velocity" })
     figure:plot({ x=pathPlotData.timestamps, y=pathPlotData.accelerations, mode="l", line={ shape='hv' }, name="Acceleration" }) -- uniformly accelerated motion
     figure:update_config({ scrollZoom = true })
 
+    -- Return plot figure
+    return figure
+end
+
+local function main(...)
+    --- @type table[] # List of plotted figures
+    local figures = {}
+
+    -- Series of experiments
+    table.insert(figures, run(PID( 2.25, 0.00, 2.75      ))) -- Correctly tuned PID-Controller (PonE)
+    table.insert(figures, run(PID( 4.75, 2.50, 2.75, 1.00))) -- Correctly tuned PID-Controller (PonM)
+    table.insert(figures, run(PID( 5.00, 2.50, 1.75, 0.25))) -- "Wobbly" PID-Controller behaviour
+    table.insert(figures, run(PID( 7.25, 2.50, 1.25, 0.50))) -- "Bouncy" PID-Controller behaviour
+    table.insert(figures, run(PID(16.25, 8.25, 1.50, 1.00))) -- "Step-like" PID-Controller behaviour
+
     -- Save plot
     local output_dir = "out"
     dir.makepath(output_dir)
-    figure:tofile(output_dir .. '/' .. "StepResponse.html")
+    plotly.tofile(output_dir .. '/' .. "StepResponse.html", figures)
 
     return 0
 end

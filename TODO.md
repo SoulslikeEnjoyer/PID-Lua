@@ -22,6 +22,6 @@
 - [x] Change Trajectory and Path records to store "{...}[]":
   - [x] Trajectory
   - [x] Path
-- [ ] Try to rewrite StepResponse example to draw 4 graphs in one go
+- [x] Try to rewrite StepResponse example to draw 4 graphs in one go
 - [ ] Add vector PID-Controller implementation
 - [ ] If it is possible to draw multiple plots in one script call, then change SpiralMovement also
