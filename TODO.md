@@ -9,18 +9,19 @@
   - [x] Rewrite. :
     - [x] Open calculationRule to public
     - [x] Add cache_entry_, because now I'm actively violating DRY principle
+    - [x] ~~Add recursive access to the cache~~ Actually no, because it is too complicated of a logic and, in fact, can actually make it into its' own separate project
   - [x] Rewrite StepResonse to work with upgraded Trajectory interface
-- [ ] Think about cache_ in a Path class (velocity depends on current and previous states of the system)
+- [x] ~~Think about cache_ in a Path class (velocity depends on current and previous states of the system)~~ i think this is a stupid idea:\
 - [x] Rewrite Path:
   - [x] Class documentation
   - [x] Finish
-- [ ] So, apparently, I don't even need coroutines (peepoSad):
+- [x] So, apparently, I don't even need coroutines (peepoSad):
   - [x] Remove coroutine logic from Trajectory class, since it is absolutely not needed
   - [x] ~~Try to hide accumulators inside coroutine of a PID-Controller~~ (nah,.. sadly it's a little bit more complicated, than I thought)
-  - [ ] Remove all the coroutine logic
-- [ ] Change Trajectory and Path records to store "{...}[]":
-  - [ ] Trajectory
-  - [ ] Path
+  - [x] Remove all the coroutine logic
+- [x] Change Trajectory and Path records to store "{...}[]":
+  - [x] Trajectory
+  - [x] Path
 - [ ] Try to rewrite StepResponse example to draw 4 graphs in one go
 - [ ] Add vector PID-Controller implementation
 - [ ] If it is possible to draw multiple plots in one script call, then change SpiralMovement also

@@ -10,20 +10,23 @@ local inspect = require("inspect")
 
 -- Module class declaration
 --- @generic T: (number | Vector<number>)
---- @class State<T>: { timestamp: number, position: T }
+--- @class State<T>: {
+---     timestamp: number,
+---     position: T,
+--- }
 --- @class Trajectory<T> # Trajectory class
 --- public:
 --- @field public calculationRule (fun(timestamp: number): T) # Rule to calculate position, corresponding to the specific timestamp
 ---
 --- @field public _init function # Construct trajectory object
 --- | fun(self: Trajectory<T>, calculationRule: (fun(timestamp: number): T), startingTimestamp: number, recordCapacity?: integer)
---- @field public current function | # Get current calculated state of the system
+--- @field public current function | # Get current calculated state
 --- | fun(self: Trajectory<T>): State<T>
 --- @field public record function | # Access trace record data
 --- | fun(self: Trajectory<T>): State<T>[]
 --- @field public clear function # Clear record and set position corresponding to the relevant timestamp (if passed)
---- | fun(self: Trajectory<T>, currentTimestamp?: number, recordCapacity?: integer)
---- @field public calculate function # Calculate next state of the system
+--- | fun(self: Trajectory<T>, relevantTimestamp?: number, recordCapacity?: integer)
+--- @field public calculate function # Calculate next state
 --- | fun(self: Trajectory<T>, deltaTime: number): State<T>
 --- 
 --- private:
@@ -31,14 +34,14 @@ local inspect = require("inspect")
 --- @field private traceRecord_ {
 ---     capacity: integer,
 ---     entries: number[],
---- } # Record of recent trajectory calculations (timestamp values only, since position depends on timestamp)
+--- } # Record of recent trajectory calculations
 --- @field private cache_ {
 ---     [(fun(timestamp: number): T)]: {
 ---         [number]: T,
 ---     },
---- } # Cache storage for calculated positions, corresponding to specific calculation rule and exact timestamp
+--- } # Cache storage for calculated positions, corresponding to specific calculation rule and specific timestamp
 ---
---- @field private cache_entry_ function | # Get position in a trajectory corresponding to the specific timestamp (precalculate if necessary)
+--- @field private cache_entry_ function | # Get position in a trajectory (precalculate if necessary)
 --- | fun(self: Trajectory<T>, calculationRule: (fun(timestamp: number): T), timestamp: number): T
 --- @field private record_entry_ function | # Form state object corresponding to the specific trace record entry
 --- | fun(self: Trajectory<T>, entryIndex: integer): State<T>?
@@ -77,12 +80,12 @@ end
 function Trajectory:current()
     --- @generic T: (number | Vector<number>)
     --- @type State<T> # Current state of the system
-    local currentState = {
+    local current = {
         timestamp = self.currentTimestamp_,
         position  = tablex.deepcopy(self:cache_entry_(self.calculationRule, self.currentTimestamp_))
     }
 
-    return currentState
+    return current
 end
 
 function Trajectory:record_entry_(entryIndex)
@@ -95,12 +98,12 @@ function Trajectory:record_entry_(entryIndex)
 
     --- @generic T: (number | Vector<number>)
     --- @type State<T> # Entry state of the system
-    local entryState = {
+    local entry = {
         timestamp = self.traceRecord_.entries[entryIndex],
         position  = tablex.deepcopy(self:cache_entry_(self.calculationRule, self.traceRecord_.entries[entryIndex]))
     }
 
-    return entryState
+    return entry
 end
 
 function Trajectory:record()
@@ -115,7 +118,7 @@ function Trajectory:record()
     return traceRecord
 end
 
-function Trajectory:clear(currentTimestamp, recordCapacity)
+function Trajectory:clear(relevantTimestamp, recordCapacity)
     -- Clear trace record data and update trace record capacity if passed
     self.traceRecord_.entries = {}
     if recordCapacity ~= nil then
@@ -127,9 +130,9 @@ function Trajectory:clear(currentTimestamp, recordCapacity)
         [self.calculationRule] = {}
     }
 
-    -- Update current timestamp if passed
-    if currentTimestamp ~= nil then
-        self.currentTimestamp_ = currentTimestamp
+    -- Update current timestamp if its' relevant value is passed
+    if relevantTimestamp ~= nil then
+        self.currentTimestamp_ = relevantTimestamp
     end
 
     if self.traceRecord_.capacity > 0 then
@@ -147,13 +150,13 @@ function Trajectory:calculate(deltaTime)
 
     --- @generic T: (number | Vector<number>)
     --- @type State<T> # Current state of the system
-    local currentState = {
+    local current = {
         timestamp = self.currentTimestamp_,
         position  = tablex.deepcopy(self:cache_entry_(self.calculationRule, self.currentTimestamp_))
     }
 
     -- Return calculated state
-    return currentState
+    return current
 end
 
 return Trajectory

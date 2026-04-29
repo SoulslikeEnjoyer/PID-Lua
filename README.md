@@ -1,2 +1,3 @@
 # PID-Lua
-Simple PID controller, implemented in Lua.
+
+Simple PID-Controller, implemented in Lua.

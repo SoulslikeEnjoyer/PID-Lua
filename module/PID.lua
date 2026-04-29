@@ -1,7 +1,6 @@
 -- Components
 local class  = require("pl.class" )
 local tablex = require("pl.tablex")
-local types  = require("pl.types" )
 
 -- Temporary components
 local inspect = require("inspect")
@@ -129,7 +128,8 @@ local function equal(a, b, epsilon)
     return a == b or math.abs(a - b) < epsilon * math.max(math.abs(a), math.abs(b))
 end
 function PID:update(input, target, deltaTime)
-    local scalarValue = types.is_type(input, "number")
+    -- Flag to determine whether PID-Controller regulates scalar value
+    local scalarValue = (type(input) == "number")
 
     -- Control output value
     local output = scalarValue and 0 or {} -- ternary construction
