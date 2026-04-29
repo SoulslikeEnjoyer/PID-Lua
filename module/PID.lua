@@ -191,9 +191,10 @@ function PID:update(input, target, deltaTime)
             local I = 0
 
             -- Integral on Error
-            self.term.integral.accumulator = (not equal(target, input)) and -- ternary construction
-                (self.term.integral.accumulator or 0) + error * deltaTime or
-                0
+            self.term.integral.accumulator = (self.term.integral.accumulator or 0) + error * deltaTime
+            if self.term.proportional.on.error.weight() == 1 and equal(target, input) then -- reset accumulator ONLY if proportional term is calculated on error fully
+                self.term.integral.accumulator = 0
+            end
             local IonE = self.term.integral.accumulator
             I = I + self.term.integral.gain * IonE
 

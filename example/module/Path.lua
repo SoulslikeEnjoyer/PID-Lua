@@ -95,10 +95,8 @@ function Path:move(targetPosition, deltaTime)
 
     -- Calculate next timestamp
     next.timestamp = next.timestamp + deltaTime
-
     -- Calculate next acceleration value
     next.acceleration = self.controller:update(self.current_.position, targetPosition, deltaTime)
-
     if scalarValue then
         -- Calculate next position
         next.position = next.position + next.velocity * deltaTime + next.acceleration * deltaTime ^ 2 / 2

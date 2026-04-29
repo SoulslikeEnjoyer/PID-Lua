@@ -13,6 +13,9 @@ local PID        = require("PID")
 local Trajectory = require("Trajectory")
 local Path       = require("Path")
 
+-- Auxiliary type definitions
+--- @class Vector<T>: { [(integer | string)]: T } # Vector value type
+
 -- Function to study controller's behaviour on - Heaviside step function
 --- @type fun(t: number): number
 local function Heaviside(t)
@@ -24,12 +27,17 @@ end
 
 local function main(...)
     -- Experiment configuration
+    --- @generic T: (number | Vector<number>)
+    --- @class State<T>: {
+    ---     timestamp: number,
+    ---     position: T,
+    --- } # State value type
     --- @type State<number>
     local starting = {
         timestamp = 0,
         position = 0
     }
-    local movementTime = 10.000 -- 10 seconds
+    local movementTime = 60.000 -- 60 seconds
     local    deltaTime =  0.001 -- 1 millisecond
     -- local    deltaTime =  0.500 -- half a second (instability)
 
@@ -37,8 +45,8 @@ local function main(...)
     --- @type PID<number>
     -- local controller = PID(2.5, 0, 2.75) -- ideal on error
     -- local controller = PID(4.75, 2.5, 2.75, 1) -- ideal on measure
-    local controller = PID(7.25, 2.5, 1.25, 0.5) -- bouncy
-    -- local controller = PID(16.25, 8.25, 1.5, 0.95) -- step-like
+    -- local controller = PID(7.25, 2.5, 1.25, 0.5) -- bouncy
+    local controller = PID(16.25, 8.25, 1.5, 0.95) -- step-like
 
     -- Auxiliary experiment structures
     --- @type integer
