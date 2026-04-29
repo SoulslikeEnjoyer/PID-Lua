@@ -110,6 +110,10 @@ function Path:move(targetPosition, deltaTime)
     self.current_ = next
 
     -- Add current state to path record
+    if #self.traceRecord_.entries > 0 then
+        -- Uniformly accelerated motion
+        self.traceRecord_.entries[#self.traceRecord_.entries].acceleration = tablex.deepcopy(self.current_.acceleration)
+    end
     table.insert(self.traceRecord_.entries, tablex.deepcopy(self.current_))
     while #self.traceRecord_.entries > self.traceRecord_.capacity do
         table.remove(self.traceRecord_.entries, 1)

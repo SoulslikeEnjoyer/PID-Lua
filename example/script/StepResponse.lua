@@ -36,9 +36,9 @@ local function main(...)
     -- Object of the study - PID controller
     --- @type PID<number>
     -- local controller = PID(2.5, 0, 2.75) -- ideal on error
-    -- local controller = PID(7.5, 4.5, 1.25, 0.25)
-    -- local controller = PID(7.25, 2.5, 1.25, 0.5)
-    local controller = PID(4.75, 2.5, 2.75, 1) -- ideal on measure
+    -- local controller = PID(4.75, 2.5, 2.75, 1) -- ideal on measure
+    local controller = PID(7.25, 2.5, 1.25, 0.5) -- bouncy
+    -- local controller = PID(16.25, 8.25, 1.5, 0.95) -- step-like
 
     -- Auxiliary experiment structures
     --- @type integer
