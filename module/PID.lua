@@ -56,6 +56,7 @@ local PID = class()
 
 function PID:_init(Kp, Ki, Kd, PonM)
     -- Initialization with common term properties
+    --- @type { gain: number, limit: number? } # Common term properties
     local common = {
         gain  = 0,
         limit = nil
@@ -128,51 +129,40 @@ local function equal(a, b, epsilon)
     return a == b or math.abs(a - b) < epsilon * math.max(math.abs(a), math.abs(b))
 end
 function PID:update(input, target, deltaTime)
-    -- Flag to determine whether PID-Controller regulates scalar value
+    --- @type boolean # Flag to determine whether PID-Controller regulates scalar value
     local scalarValue = (type(input) == "number")
 
-    -- Control output value
+    --- @generic T: (number | Vector<number>)
+    --- @type T # Control output value
     local output = scalarValue and 0 or {} -- ternary construction
 
-    -- Error value
-    local error = scalarValue and 0 or {} -- ternary construction
-    if scalarValue then
-        error = target - input
-    else
-        for key, _ in pairs(input) do
-            error[key] = target[key] - input[key]
-        end
-    end
-
-    -- Measurement value
-    local measurement = nil
-    if self.storage.input ~= nil then
-        measurement = scalarValue and 0 or {} -- ternary construction
-        if scalarValue then
-            measurement = input - self.storage.input
-        else
-            for key, _ in pairs(input) do
-                measurement[key] = input[key] - self.storage.input[key]
-            end
-        end
-    end
-
     -- PID Controller logic
-    if scalarValue then -- PID controller regulates scalar value
+    if scalarValue then -- PID-Controller regulates scalar value
+        --- @type number # Error value
+        local error = target - input
+
+        --- @type number? # Measurement value
+        local measurement = nil
+        if self.storage.input ~= nil then
+            measurement = input - self.storage.input
+        end
+
         -- Proportional term
         if self.term.proportional.gain ~= 0 then
-            -- Term
+            --- @type number # Term
             local P = 0
 
             -- Proportional on Error
             if self.term.proportional.on.error.weight() ~= 0 then
+                --- @type number # Partial on error term contributon
                 local PonE = error
                 P = P + self.term.proportional.gain * self.term.proportional.on.error.weight() * PonE
             end
             -- Proportional on Measurement
             if measurement ~= nil and self.term.proportional.on.measurement.weight() ~= 0 then
-                self.term.proportional.on.measurement.accumulator = (self.term.proportional.on.measurement.accumulator or 0) + measurement
-                local PonM = -self.term.proportional.on.measurement.accumulator
+                self.term.proportional.on.measurement.accumulator = (self.term.proportional.on.measurement.accumulator or 0) - measurement
+                --- @type number # Partial on measurement term contributon
+                local PonM = self.term.proportional.on.measurement.accumulator
                 P = P + self.term.proportional.gain * self.term.proportional.on.measurement.weight() * PonM
             end
 
@@ -187,7 +177,7 @@ function PID:update(input, target, deltaTime)
 
         -- Integral term
         if self.term.integral.gain ~= 0 then
-            -- Term
+            --- @type number # Term
             local I = 0
 
             -- Integral on Error
@@ -195,6 +185,7 @@ function PID:update(input, target, deltaTime)
             if self.term.proportional.on.error.weight() == 1 and equal(target, input) then -- reset accumulator ONLY if proportional term is calculated on error fully
                 self.term.integral.accumulator = 0
             end
+            --- @type number # On error term contributon
             local IonE = self.term.integral.accumulator
             I = I + self.term.integral.gain * IonE
 
@@ -209,11 +200,12 @@ function PID:update(input, target, deltaTime)
 
         -- Derivative term
         if self.term.derivative.gain ~= 0 then
-            -- Term
+            --- @type number # Term
             local D = 0
 
             -- Derivative on Measurement
             if measurement ~= nil then
+                --- @type number # On measurement term contributon
                 local DonM = -measurement / deltaTime
                 D = D + self.term.derivative.gain * DonM
             end
@@ -226,6 +218,126 @@ function PID:update(input, target, deltaTime)
             -- Contribution to the control output
             output = output + D
         end
+    else -- PID-Controller regulates vector value
+        --- @type Vector<number> # Error value
+        local error = tablex.deepcopy(target)
+        for axis, _ in pairs(input) do
+            error[axis] = (error[axis] or 0) - input[axis]
+        end
+
+        --- @type Vector<number>? # Measurement value
+        local measurement = nil
+        if self.storage.input ~= nil then
+            measurement = tablex.deepcopy(input)
+            for axis, _ in pairs(self.storage.input) do
+                measurement[axis] = (measurement[axis] or 0) - self.storage.input[axis]
+            end
+        end
+
+        -- Proportional term
+        if self.term.proportional.gain ~= 0 then
+            --- @type Vector<number> # Term
+            local P = {}
+
+            -- Proportional on Error
+            if self.term.proportional.on.error.weight() ~= 0 then
+                --- @type Vector<number> # Partial on error term contributon
+                local PonE = error
+                for axis, _ in pairs(PonE) do
+                    P[axis] = (P[axis] or 0) + self.term.proportional.gain * self.term.proportional.on.error.weight() * PonE[axis]
+                end
+            end
+            -- Proportional on Measurement
+            if measurement ~= nil and self.term.proportional.on.measurement.weight() ~= 0 then
+                if self.term.proportional.on.measurement.accumulator == nil then
+                    self.term.proportional.on.measurement.accumulator = {}
+                end
+                for axis, _ in pairs(measurement) do
+                    self.term.proportional.on.measurement.accumulator[axis] = (self.term.proportional.on.measurement.accumulator[axis] or 0) - measurement[axis]
+                end
+                --- @type Vector<number> # Partial on measurement term contributon
+                local PonM = self.term.proportional.on.measurement.accumulator
+                for axis, _ in pairs(PonM) do
+                    P[axis] = (P[axis] or 0) + self.term.proportional.gain * self.term.proportional.on.error.weight() * PonM[axis]
+                end
+            end
+
+            -- Clamp to acceptable limits
+            if self.term.proportional.limit ~= nil then
+                for axis, _ in pairs(P) do
+                    P[axis] = math.min(math.max(P[axis], -self.term.proportional.limit), self.term.proportional.limit)
+                end
+            end
+
+            -- Contribution to the control output
+            for axis, _ in pairs(P) do
+                output[axis] = (output[axis] or 0) + P[axis]
+            end
+        end
+
+        -- Integral term
+        if self.term.integral.gain ~= 0 then
+            --- @type Vector<number> # Term
+            local I = {}
+
+            -- Integral on Error
+            if self.term.integral.accumulator == nil then
+                self.term.integral.accumulator = {}
+            end
+            for axis, _ in pairs(error) do
+                self.term.integral.accumulator[axis] = (self.term.integral.accumulator[axis] or 0) + error[axis] * deltaTime
+                if self.term.proportional.on.error.weight() == 1 and equal((target[axis] or 0), (input[axis] or 0)) then -- reset accumulator ONLY if proportional term is calculated on error fully
+                    self.term.integral.accumulator[axis] = 0
+                end
+            end
+            --- @type Vector<number> # On error term contributon
+            local IonE = self.term.integral.accumulator
+            for axis, _ in pairs(IonE) do
+                I[axis] = (I[axis] or 0) + self.term.integral.gain * IonE[axis]
+            end
+
+            -- Clamp to acceptable limits
+            if self.term.integral.limit ~= nil then
+                for axis, _ in pairs(I) do
+                    I[axis] = math.min(math.max(I[axis], -self.term.integral.limit), self.term.integral.limit)
+                end
+            end
+
+            -- Contribution to the control output
+            for axis, _ in pairs(I) do
+                output[axis] = (output[axis] or 0) + I[axis]
+            end
+        end
+
+        -- Derivative term
+        if self.term.derivative.gain ~= 0 then
+            --- @type Vector<number> # Term
+            local D = {}
+
+            -- Derivative on Measurement
+            if measurement ~= nil then
+                --- @type Vector<number> # On measurement term contributon
+                local DonM = {}
+                for axis, _ in pairs(measurement) do
+                    DonM[axis] = -measurement[axis] / deltaTime
+                end
+                for axis, _ in pairs(DonM) do
+                    D[axis] = (D[axis] or 0) + self.term.derivative.gain * DonM[axis]
+                end
+            end
+
+            -- Clamp to acceptable limits
+            if self.term.derivative.limit ~= nil then
+                for axis, _ in pairs(D) do
+                    D[axis] = math.min(math.max(D[axis], -self.term.derivative.limit), self.term.derivative.limit)
+                end
+            end
+
+            -- Contribution to the control output
+            for axis, _ in pairs(D) do
+                output[axis] = (output[axis] or 0) + D[axis]
+            end
+        end
     end
 
     -- Update storage data
@@ -234,7 +346,7 @@ function PID:update(input, target, deltaTime)
         target = tablex.deepcopy(target)
     }
 
-    -- Return the control output
+    -- Return control output
     return output
 end
 

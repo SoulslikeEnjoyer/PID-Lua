@@ -47,7 +47,7 @@ function Path:_init(controller, starting, recordCapacity)
         entries = {}
     }
 
-    -- Flag to determine whether movement is multidimensional
+    --- @type boolean # Flag to determine whether movement is multidimensional
     local scalarValue = (type(starting.position) == "number")
 
     self.current_ = {
@@ -86,7 +86,7 @@ function Path:clear(relevant, recordCapacity)
 end
 
 function Path:move(targetPosition, deltaTime)
-    -- Flag to determine whether movement is multidimensional
+    --- @type boolean # Flag to determine whether movement is multidimensional
     local scalarValue = (type(targetPosition) == "number")
 
     --- @generic T: (number | Vector<number>)
@@ -97,11 +97,23 @@ function Path:move(targetPosition, deltaTime)
     next.timestamp = next.timestamp + deltaTime
     -- Calculate next acceleration value
     next.acceleration = self.controller:update(self.current_.position, targetPosition, deltaTime)
-    if scalarValue then
+    if scalarValue then -- movement is multidimensional
         -- Calculate next position
         next.position = next.position + next.velocity * deltaTime + next.acceleration * deltaTime ^ 2 / 2
         -- Calculate next velocity value
         next.velocity = next.velocity + next.acceleration * deltaTime
+    else -- movement along single axis
+        -- Calculate next position
+        for axis, _ in pairs(next.velocity) do
+            next.position[axis] = (next.position[axis] or 0) + next.velocity[axis] * deltaTime
+        end
+        for axis, _ in pairs(next.acceleration) do
+            next.position[axis] = (next.position[axis] or 0) + next.acceleration[axis] * deltaTime ^ 2 / 2
+        end
+        -- Calculate next velocity value
+        for axis, _ in pairs(next.acceleration) do
+            next.velocity[axis] = (next.velocity[axis] or 0) + next.acceleration[axis] * deltaTime
+        end
     end
 
     -- Update current state

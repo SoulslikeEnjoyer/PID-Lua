@@ -74,7 +74,7 @@ function Trajectory:cache_entry_(calculationRule, timestamp)
         self.cache_[calculationRule][timestamp] = self.calculationRule(timestamp)
     end
 
-    return self.cache_[calculationRule][timestamp]
+    return tablex.deepcopy(self.cache_[calculationRule][timestamp])
 end
 
 function Trajectory:current()
@@ -82,7 +82,7 @@ function Trajectory:current()
     --- @type State<T> # Current state of the system
     local current = {
         timestamp = self.currentTimestamp_,
-        position  = tablex.deepcopy(self:cache_entry_(self.calculationRule, self.currentTimestamp_))
+        position  = self:cache_entry_(self.calculationRule, self.currentTimestamp_)
     }
 
     return current
@@ -100,7 +100,7 @@ function Trajectory:record_entry_(entryIndex)
     --- @type State<T> # Entry state of the system
     local entry = {
         timestamp = self.traceRecord_.entries[entryIndex],
-        position  = tablex.deepcopy(self:cache_entry_(self.calculationRule, self.traceRecord_.entries[entryIndex]))
+        position  = self:cache_entry_(self.calculationRule, self.traceRecord_.entries[entryIndex])
     }
 
     return entry
@@ -152,7 +152,7 @@ function Trajectory:calculate(deltaTime)
     --- @type State<T> # Current state of the system
     local current = {
         timestamp = self.currentTimestamp_,
-        position  = tablex.deepcopy(self:cache_entry_(self.calculationRule, self.currentTimestamp_))
+        position  = self:cache_entry_(self.calculationRule, self.currentTimestamp_)
     }
 
     -- Return calculated state

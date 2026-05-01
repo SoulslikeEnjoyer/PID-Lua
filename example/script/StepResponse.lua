@@ -27,6 +27,7 @@ end
 
 --- Experiment conducting function
 --- @param controller PID<number>
+--- @return table plotly.figure
 local function run(controller)
     -- Experiment configuration
     --- @generic T: (number | Vector<number>)

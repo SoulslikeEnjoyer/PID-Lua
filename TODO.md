@@ -23,5 +23,8 @@
   - [x] Trajectory
   - [x] Path
 - [x] Try to rewrite StepResponse example to draw 4 graphs in one go
-- [ ] Add vector PID-Controller implementation
+- [ ] Add vector PID-Controller implementation:
+  - [x] PID module
+  - [x] Path module
+  - [ ] Spiral movement script
 - [ ] If it is possible to draw multiple plots in one script call, then change SpiralMovement also
