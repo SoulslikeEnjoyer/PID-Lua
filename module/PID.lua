@@ -182,9 +182,6 @@ function PID:update(input, target, deltaTime)
 
             -- Integral on Error
             self.term.integral.accumulator = (self.term.integral.accumulator or 0) + error * deltaTime
-            if self.term.proportional.on.error.weight() == 1 and equal(target, input) then -- reset accumulator ONLY if proportional term is calculated on error fully
-                self.term.integral.accumulator = 0
-            end
             --- @type number # On error term contributon
             local IonE = self.term.integral.accumulator
             I = I + self.term.integral.gain * IonE
@@ -286,9 +283,6 @@ function PID:update(input, target, deltaTime)
             end
             for axis, _ in pairs(error) do
                 self.term.integral.accumulator[axis] = (self.term.integral.accumulator[axis] or 0) + error[axis] * deltaTime
-                if self.term.proportional.on.error.weight() == 1 and equal((target[axis] or 0), (input[axis] or 0)) then -- reset accumulator ONLY if proportional term is calculated on error fully
-                    self.term.integral.accumulator[axis] = 0
-                end
             end
             --- @type Vector<number> # On error term contributon
             local IonE = self.term.integral.accumulator
