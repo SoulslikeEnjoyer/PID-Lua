@@ -255,7 +255,7 @@ function PID:update(input, target, deltaTime)
                 --- @type Vector<number> # Partial on measurement term contributon
                 local PonM = self.term.proportional.on.measurement.accumulator
                 for axis, _ in pairs(PonM) do
-                    P[axis] = (P[axis] or 0) + self.term.proportional.gain * self.term.proportional.on.error.weight() * PonM[axis]
+                    P[axis] = (P[axis] or 0) + self.term.proportional.gain * self.term.proportional.on.measurement.weight() * PonM[axis]
                 end
             end
 

@@ -5,9 +5,6 @@ package.path  = "example/module/?.lua;" .. package.path
 local dir    = require("pl.dir")
 local plotly = require("plotly")
 
--- Temporary components
-local inspect = require("inspect")
-
 -- Local components
 local PID        = require("PID")
 local Trajectory = require("Trajectory")
@@ -16,7 +13,7 @@ local Path       = require("Path")
 -- Auxiliary type definitions
 --- @class Vector<T>: { [(integer | string)]: T } # Vector value type
 
--- Function to study controller's behaviour on - Heaviside step function
+-- Trajectory function
 --- @type fun(t: number): number
 local function Heaviside(t)
     if t >= 0 then
@@ -25,11 +22,19 @@ local function Heaviside(t)
     return 0
 end
 
---- Experiment conducting function
+--- Test run function
 --- @param controller PID<number>
 --- @return table plotly.figure
 local function run(controller)
-    -- Experiment configuration
+    --- @type string # Title of the test run, describing PID-Controller configuration
+    local testTitle = "PID(" ..
+            "Kp="   .. controller.term.proportional.gain .. ", " ..
+            "Ki="   .. controller.term.integral.gain     .. ", " ..
+            "Kd="   .. controller.term.derivative.gain   .. ", " ..
+            "PonM=" .. controller.term.proportional.on.measurement.weight() * 100 .. "%" ..
+        ")"
+
+    -- Test configuration
     --- @generic T: (number | Vector<number>)
     --- @class State<T>: {
     ---     timestamp: number,
@@ -42,9 +47,8 @@ local function run(controller)
     }
     local movementTime = 10.000 -- 10 seconds
     local    deltaTime =  0.001 -- 1 millisecond
-    -- local    deltaTime =  0.500 -- half a second (instability)
 
-    -- Secondary experiment structures
+    -- Secondary structures
     --- @type integer
     local recordCapacity = 1e6
     --- @type Trajectory<number>
@@ -52,7 +56,9 @@ local function run(controller)
     --- @type Path<number>
     local path = Path(controller, starting, recordCapacity)
 
-    -- Conduct an experiment: follow the trajectory and record actual path traveled
+    io.write("Started " .. testTitle .. "... ")
+
+    -- Follow the trajectory and record actual path traveled
     --- @type number
     local totalTime = 0
     while totalTime < movementTime do
@@ -66,7 +72,10 @@ local function run(controller)
 
     -- Prepare trajectory trace record data for plotting (convert array of tables into table of arrays)
     local trajectoryRecord = trajectory:record()
-    --- @type { timestamps: number[], positions: number[] }
+    --- @type {
+    ---     timestamps: number[],
+    ---     positions: number[],
+    --- }
     local trajectoryPlotData = {
         timestamps = {},
         positions  = {}
@@ -78,7 +87,12 @@ local function run(controller)
 
     -- Prepare path trace record data for plotting (convert array of tables into table of arrays)
     local pathRecord = path:record()
-    --- @type { timestamps: number[], positions: number[] }
+    --- @type {
+    ---     timestamps: number[],
+    ---     positions: number[],
+    ---     velocities: number[],
+    ---     accelerations: number[],
+    --- }
     local pathPlotData = {
         timestamps    = {},
         positions     = {},
@@ -92,41 +106,39 @@ local function run(controller)
         table.insert(pathPlotData.accelerations, pathRecord[index].acceleration)
     end
 
-    -- Plot experiment results: calculated trajectory and actual path traveled
-    --- @type string # Title of the plot, describing PID-Controller configuration
-    local plotTitle = "PID(" ..
-            "Kp="   .. controller.term.proportional.gain .. ", " ..
-            "Ki="   .. controller.term.integral.gain     .. ", " ..
-            "Kd="   .. controller.term.derivative.gain   .. ", " ..
-            "PonM=" .. controller.term.proportional.on.measurement.weight() * 100 .. "%" ..
-        ")"
+    -- Plot test run results: calculated trajectory and actual path traveled
     local figure = plotly.figure()
-    figure:plot({ title=plotTitle, xlabel="Time", ylabel="Coordinate" })
+    figure:plot({ title=testTitle, xlabel="Time", ylabel="Coordinate" })
     figure:plot({ x=trajectoryPlotData.timestamps, y=trajectoryPlotData.positions, mode="l", name="Trajectory" })
     figure:plot({ x=pathPlotData.timestamps, y=pathPlotData.positions    , mode="l", name="Path" })
     figure:plot({ x=pathPlotData.timestamps, y=pathPlotData.velocities   , mode="l", name="Velocity" })
     figure:plot({ x=pathPlotData.timestamps, y=pathPlotData.accelerations, mode="l", line={ shape='hv' }, name="Acceleration" }) -- uniformly accelerated motion
     figure:update_config({ scrollZoom = true })
 
+    io.write("Finished\n")
+
     -- Return plot figure
     return figure
 end
 
 local function main(...)
-    --- @type table[] # List of plotted figures
+    --- @type table[] # List of figures to be plotted
     local figures = {}
 
-    -- Series of experiments
+    -- Series of test runs with differently tuned controllers
     table.insert(figures, run(PID( 2.25, 0.00, 2.75      ))) -- Correctly tuned PID-Controller (PonE)
     table.insert(figures, run(PID( 4.75, 2.50, 2.75, 1.00))) -- Correctly tuned PID-Controller (PonM)
-    table.insert(figures, run(PID( 5.00, 2.50, 1.75, 0.25))) -- "Wobbly" PID-Controller behaviour
-    table.insert(figures, run(PID( 7.25, 2.50, 1.25, 0.50))) -- "Bouncy" PID-Controller behaviour
-    table.insert(figures, run(PID(16.25, 8.25, 1.50, 1.00))) -- "Step-like" PID-Controller behaviour
+    -- other interesting controller behaviours
+    table.insert(figures, run(PID( 5.00, 2.50, 1.75, 0.25)))
+    table.insert(figures, run(PID( 7.25, 2.50, 1.25, 0.50)))
+    table.insert(figures, run(PID(16.25, 8.25, 1.50, 1.00)))
 
     -- Save plot
+    io.write("Writing plot data to file... ")
     local output_dir = "out"
     dir.makepath(output_dir)
     plotly.tofile(output_dir .. '/' .. "StepResponse.html", figures)
+    io.write("Finished\n")
 
     return 0
 end
