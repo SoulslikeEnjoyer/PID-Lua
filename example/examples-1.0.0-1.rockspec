@@ -2,7 +2,7 @@
 
 rockspec_format = "3.0"
 
-local project  = { package = "Examples", version = "dev" }
+local project  = { package = "Examples", version = "1.0.0" }
 local rockspec = { revision = 1 }
 local git = {
     user   = "SoulslikeEnjoyer",
