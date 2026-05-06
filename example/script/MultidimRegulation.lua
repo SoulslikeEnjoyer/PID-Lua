@@ -123,7 +123,7 @@ local function run(controller)
     figure:plot({ title=testTitle, xlabel="X Coordinate", ylabel="Y Coordinate" })
     figure:plot({ x=trajectoryPlotData.positions.x, y=trajectoryPlotData.positions.y, mode="l", name="Trajectory" })
     figure:plot({ x=pathPlotData.positions.x, y=pathPlotData.positions.y, mode="l", name="Path" })
-    figure:update_config({ scrollZoom = true })
+    -- figure:update_config({ scrollZoom = true })
 
     io.write("Finished\n")
 

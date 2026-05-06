@@ -113,7 +113,7 @@ local function run(controller)
     figure:plot({ x=pathPlotData.timestamps, y=pathPlotData.positions    , mode="l", name="Path" })
     figure:plot({ x=pathPlotData.timestamps, y=pathPlotData.velocities   , mode="l", name="Velocity" })
     figure:plot({ x=pathPlotData.timestamps, y=pathPlotData.accelerations, mode="l", line={ shape='hv' }, name="Acceleration" }) -- uniformly accelerated motion
-    figure:update_config({ scrollZoom = true })
+    -- figure:update_config({ scrollZoom = true })
 
     io.write("Finished\n")
 
