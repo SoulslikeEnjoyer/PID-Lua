@@ -29,11 +29,7 @@ Resulting plots will appear in the "out" folder.
 
 ### Step response
 
-![PonEFull](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/newplot(3).png) ![PonEPartial](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/newplot(4).png)
-![PonMFull](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/newplot(5).png) ![PonMPartial](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/newplot(6).png)
-![wobblyFull](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/newplot(7).png) ![wobblyPartial](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/newplot(8).png)
-![bouncyFull](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/newplot(9).png) ![bouncyPartial](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/newplot(10).png)
-![stepLikeFull](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/newplot(11).png) ![stepLikePartial](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/newplot(12).png)
+![StepResponse](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/StepResponse.png)
 
 ### Spiral movement
 
