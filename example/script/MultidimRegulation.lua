@@ -10,16 +10,19 @@ local PID        = require("PID")
 local Trajectory = require("Trajectory")
 local Path       = require("Path")
 
--- Temporary components
-local inspect = require("inspect")
-
 -- Auxiliary type definitions
 --- @class Vector<T>: { [(integer | string)]: T } # Vector value type
 
 -- Trajectory function
 --- @type fun(t: number): Vector<number>
-local function spiral(t)
-    local coords = { x = t * math.cos(t), y = t * math.sin(t) }
+local function sum_of_sines(t)
+    local y = 0
+    local primeNumbers = { 1, 2, 3, 5, 7 }
+    for _, num in ipairs(primeNumbers) do
+        local k = math.sqrt(num)
+        y = y + math.sin(k * t) / k
+    end
+    local coords = { x = t, y = y }
     return coords
 end
 
@@ -46,14 +49,14 @@ local function run(controller)
         timestamp = 0,
         position = { x=0, y=0 }
     }
-    local movementTime = 10.000 -- 10 seconds
+    local movementTime = 20.000 -- 20 seconds
     local    deltaTime =  0.001 -- 1 millisecond
 
     -- Secondary structures
     --- @type integer
     local recordCapacity = 1e6
     --- @type Trajectory<Vector<number>>
-    local trajectory = Trajectory(spiral, starting.timestamp, recordCapacity)
+    local trajectory = Trajectory(sum_of_sines, starting.timestamp, recordCapacity)
     --- @type Path<Vector<number>>
     local path = Path(controller, starting, recordCapacity)
 
@@ -120,7 +123,7 @@ local function run(controller)
     figure:plot({ title=testTitle, xlabel="X Coordinate", ylabel="Y Coordinate" })
     figure:plot({ x=trajectoryPlotData.positions.x, y=trajectoryPlotData.positions.y, mode="l", name="Trajectory" })
     figure:plot({ x=pathPlotData.positions.x, y=pathPlotData.positions.y, mode="l", name="Path" })
-    figure:update_config({ scrollZoom = true })
+    -- figure:update_config({ scrollZoom = true })
 
     io.write("Finished\n")
 
@@ -133,15 +136,15 @@ local function main(...)
     local figures = {}
 
     -- Series of test runs with differently tuned controllers
-    table.insert(figures, run(PID(8.75, 0.75, 4.50      ))) -- Correctly tuned PID-Controller (PonE)
-    table.insert(figures, run(PID(7.50, 8.75, 2.50, 1.00))) -- Correctly tuned PID-Controller (PonM)
-    table.insert(figures, run(PID(7.25, 6.50, 2.25, 0.50))) -- Correctly tuned PID-Controller (50% PonE / 50% PonM)
+    table.insert(figures, run(PID(7.25, 0.00, 3.00      ))) -- Correctly tuned PID-Controller (PonE)
+    table.insert(figures, run(PID(8.50, 9.75, 3.00, 1.00))) -- Correctly tuned PID-Controller (PonM)
+    table.insert(figures, run(PID(9.00, 8.00, 3.00, 0.50))) -- Correctly tuned PID-Controller (50% PonE / 50% PonM)
 
     -- Save plot
     io.write("Writing plot data to file... ")
     local output_dir = "out"
     dir.makepath(output_dir)
-    plotly.tofile(output_dir .. '/' .. "SpiralMovement.html", figures)
+    plotly.tofile(output_dir .. '/' .. "MultidimRegulation.html", figures)
     io.write("Finished\n")
 
     return 0

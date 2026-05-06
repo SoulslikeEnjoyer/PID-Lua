@@ -1,8 +1,6 @@
--- TODO: move configs into JSON file and generate rockspec on the fly
-
 rockspec_format = "3.0"
 
-local project  = { package = "Examples", version = "1.0.0" }
+local project  = { package = "Examples", version = "1.0.1" }
 local rockspec = { revision = 1 }
 local git = {
     user   = "SoulslikeEnjoyer",
@@ -23,7 +21,7 @@ description = {
     summary = "PID-Controller usage examples",
     detailed = [[
         To run example scripts, run following commands from the root of the project tree:
-        "lua -l deps example/script/StepResonse.lua" or "lua -l deps example/script/SpiralMovement.lua"
+        "lua -l deps example/script/StepResonse.lua" or "lua -l deps example/script/MultidimRegulation.lua"
         You will need "plotly" module installed as a dependency and an internet connection to render the plots:
         Run "luarocks install --only-deps" from the root of the project tree with the current rockspec file as an argument or
         run "luarocks install --server=https://luarocks.org/dev plotly" to install "plotly" module manually.
