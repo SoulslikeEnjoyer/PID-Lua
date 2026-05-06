@@ -46,4 +46,4 @@ Resulting plots will appear in the "out" folder.
 
 Example modules also rely on the same modules of the Penlight package. Example scripts utilise [pl.dir](https://github.com/lunarmodules/Penlight/blob/master/lua/pl/dir.lua) module for the output directory creation.
 
-Usage examples also require [plotly](https://github.com/lunarmodules/Penlight/blob/master/lua/pl/dir.lua) package installed as a dependency and an internet connection to render the plots:
+Usage examples also require [plotly](https://github.com/lunarmodules/Penlight/blob/master/lua/pl/dir.lua) package installed as a dependency and an internet connection to render the plots.
