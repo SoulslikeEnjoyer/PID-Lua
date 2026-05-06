@@ -10,18 +10,22 @@ PID-Controller implemented in Lua, supporting such features as:
 - Multidimensional values regulation;
 - etc.
 
+## Installation
+
+`luarocks install pid-controller`
+
 ## Usage
 
 You can see full PID-Controller class interface in the [PID.lua](module/PID.lua) module in the [LuaLS](https://luals.github.io) documentation block.
 
 ## Examples
 
-For usage examples, please, see [example](example) folder, containing [Trajectory.lua](example/module/Trajectory.lua), [Path.lua](example/module/Path.lua) modules and [StepResponse.lua](example/script/StepResponse.lua), [SpiralMovement.lua](example/script/SpiralMovement.lua) scripts, which implement movement of an inertial body along precalculated trajectory, using several differently tuned PID-Controllers.
+For usage examples, please, see [example](example) folder, containing [Trajectory.lua](example/module/Trajectory.lua), [Path.lua](example/module/Path.lua) modules and [StepResponse.lua](example/script/StepResponse.lua), [MultidimRegulation.lua](example/script/MultidimRegulation.lua) scripts, which implement movement of an inertial body along precalculated trajectory, using several differently tuned PID-Controllers.
 
 To run example scripts, run following commands from the root of the project tree:
 `lua -l deps example/script/StepResonse.lua`
 or
-`lua -l deps example/script/SpiralMovement.lua`
+`lua -l deps example/script/MultidimRegulation.lua`
 
 Resulting plots will appear in the "out" folder.
 
@@ -31,10 +35,9 @@ Resulting plots will appear in the "out" folder.
 
 ![StepResponse](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/StepResponse.png)
 
-### Spiral movement
+### Multidimensional value regulation (top view)
 
-![PonE](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/newplot(13).png) ![PonM](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/newplot(14).png)
-![50/50](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/newplot(15).png)
+![MultidimRegulation](https://raw.githubusercontent.com/SoulslikeEnjoyer/PID-Lua/refs/heads/dev/.github/images/MultidimRegulation.png)
 
 ## Dependencies
 
@@ -43,3 +46,7 @@ Resulting plots will appear in the "out" folder.
 Example modules also rely on the same modules of the Penlight package. Example scripts utilise [pl.dir](https://github.com/lunarmodules/Penlight/blob/master/lua/pl/dir.lua) module for the output directory creation.
 
 Usage examples also require [plotly](https://github.com/lunarmodules/Penlight/blob/master/lua/pl/dir.lua) package installed as a dependency and an internet connection to render the plots.
+
+## Contribution
+
+Any helpful PRs are highly appreciated =)
