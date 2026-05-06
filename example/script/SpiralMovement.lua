@@ -10,9 +10,6 @@ local PID        = require("PID")
 local Trajectory = require("Trajectory")
 local Path       = require("Path")
 
--- Temporary components
-local inspect = require("inspect")
-
 -- Auxiliary type definitions
 --- @class Vector<T>: { [(integer | string)]: T } # Vector value type
 

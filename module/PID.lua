@@ -2,9 +2,6 @@
 local class  = require("pl.class" )
 local tablex = require("pl.tablex")
 
--- Temporary components
-local inspect = require("inspect")
-
 -- Auxiliary type definitions
 --- @class Vector<T>: { [(integer | string)]: T } # Vector value type
 
