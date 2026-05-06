@@ -1,8 +1,6 @@
--- TODO: move configs into JSON file and generate rockspec on the fly via GitHub actions
-
 rockspec_format = "3.0"
 
-local project  = { package = "PID-Controller", version = "1.0.0" }
+local project  = { package = "PID-Controller", version = "1.0.1" }
 local rockspec = { revision = 1 }
 local git = {
     user   = "SoulslikeEnjoyer",
@@ -27,7 +25,7 @@ description = {
         - "Derivative Kick" prevention mechanism (Derivative on Measurement calculation approach);
         - Multidimensional values regulation;
         - etc.
-        For usage, please, see examples ("StepResponse.lua" and "SpiralMovement.lua" scripts),
+        For usage, please, see examples ("StepResponse.lua" and "MultidimRegulation.lua" scripts),
         which implement movement of an inertial body along precalculated trajectory, using several differently tuned PID-Controllers.
     ]],
     license = "GPL-3",
